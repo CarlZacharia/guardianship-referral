@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm ls:*)",
+      "Bash(npx shadcn@latest add alert:*)",
+      "Bash(npx shadcn@latest add:*)"
+    ]
+  }
+}
