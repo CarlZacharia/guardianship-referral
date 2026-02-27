@@ -5,11 +5,12 @@ export const metadata: Metadata = {
   title: 'Sign In — Zacharia Frey Referral Portal',
 }
 
-export default function LoginPage({
+export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: { redirectTo?: string; message?: string }
+  searchParams: Promise<{ redirectTo?: string; message?: string }>
 }) {
-  return <LoginForm redirectTo={searchParams.redirectTo} message={searchParams.message} />
+  const { redirectTo, message } = await searchParams
+  return <LoginForm redirectTo={redirectTo} message={message} />
 }
 

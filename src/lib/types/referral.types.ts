@@ -9,6 +9,9 @@ export type ReferralStatus = 'draft' | 'submitted' | 'in_review' | 'accepted' | 
 export type CapacityLevel = 'no_capacity' | 'limited_capacity' | 'substance_abuse' | 'has_capacity';
 export type MedicaidStatus = 'yes' | 'no' | 'applied';
 export type UserRole = 'referrer' | 'staff' | 'admin';
+export type ReferrerType =
+  | 'nursing_home' | 'hospital' | 'home_health'
+  | 'attorney' | 'social_worker' | 'family' | 'other';
 
 export type AssetType =
   | 'checking' | 'savings' | 'cd' | 'money_market'
@@ -39,6 +42,32 @@ export interface Profile {
   phone?: string;
   email: string;
   is_active: boolean;
+
+  // Onboarding fields
+  referrer_type?: ReferrerType;
+  onboarding_completed: boolean;
+
+  // Mailing address
+  mailing_street?: string;
+  mailing_city?: string;
+  mailing_state?: string;
+  mailing_zip?: string;
+
+  // Billing address
+  billing_street?: string;
+  billing_city?: string;
+  billing_state?: string;
+  billing_zip?: string;
+
+  // Primary contact (referral information)
+  primary_contact_name?: string;
+  primary_contact_phone?: string;
+  primary_contact_email?: string;
+
+  // Billing contact
+  billing_contact_name?: string;
+  billing_contact_phone?: string;
+  billing_contact_email?: string;
 }
 
 // ============================================================
@@ -340,6 +369,16 @@ export const STATUS_LABELS: Record<ReferralStatus, string> = {
   in_review: 'In Review',
   accepted: 'Accepted',
   closed: 'Closed',
+};
+
+export const REFERRER_TYPE_LABELS: Record<ReferrerType, string> = {
+  nursing_home: 'Nursing Home / SNF',
+  hospital: 'Hospital / Health System',
+  home_health: 'Home Health Agency',
+  attorney: 'Attorney / Law Firm',
+  social_worker: 'Social Worker / Case Manager',
+  family: 'Family Member / Self-Referral',
+  other: 'Other',
 };
 
 export const ASSET_TYPE_LABELS: Record<AssetType, string> = {

@@ -120,9 +120,14 @@ export function ReferralForm({ referralId, initialData, userId }: ReferralFormPr
     setError(null);
 
     try {
-      const payload: Partial<Referral> = {
+      // Separate related-table data from the referrals payload
+      const { assets, family_members, referral_documents, facilities, ...referralFields } = {
         ...referralData,
         ...stepData,
+      } as any;
+
+      const payload: Partial<Referral> = {
+        ...referralFields,
         referrer_id: userId,
         current_step: stepNumber,
         steps_completed: {
@@ -133,21 +138,30 @@ export function ReferralForm({ referralId, initialData, userId }: ReferralFormPr
         ...(isFinalSubmit && { submitted_at: new Date().toISOString() }),
       };
 
-      let result;
+      // Remove any remaining non-column fields
+      delete (payload as any).id;
+      delete (payload as any).created_at;
+      delete (payload as any).profiles;
 
-      if (savedReferralId) {
+      let result;
+      let currentReferralId = savedReferralId;
+
+      if (currentReferralId) {
         // Update existing draft
         const { data, error: updateError } = await supabase
           .from('referrals')
           .update(payload)
-          .eq('id', savedReferralId)
+          .eq('id', currentReferralId)
           .select('id')
           .single();
 
         if (updateError) throw updateError;
         result = data;
       } else {
-        // Create new referral
+        // Create new referral — ensure referral_type has a default for the NOT NULL constraint
+        if (!payload.referral_type) {
+          payload.referral_type = 'guardianship';
+        }
         const { data, error: insertError } = await supabase
           .from('referrals')
           .insert(payload)
@@ -156,10 +170,54 @@ export function ReferralForm({ referralId, initialData, userId }: ReferralFormPr
 
         if (insertError) throw insertError;
         result = data;
+        currentReferralId = result.id;
         setSavedReferralId(result.id);
       }
 
-      // Update local state
+      // Save assets to the assets table (replace all for this referral)
+      if (assets && currentReferralId) {
+        await supabase.from('assets').delete().eq('referral_id', currentReferralId);
+        if (assets.length > 0) {
+          const assetRows = assets.map((a: any, i: number) => ({
+            referral_id: currentReferralId,
+            asset_type: a.asset_type,
+            institution: a.institution || null,
+            description: a.description || null,
+            account_last4: a.account_last4 || null,
+            approximate_value: a.approximate_value || null,
+            is_exempt: a.is_exempt || false,
+            notes: a.notes || null,
+            sort_order: i,
+          }));
+          const { error: assetError } = await supabase.from('assets').insert(assetRows);
+          if (assetError) throw assetError;
+        }
+      }
+
+      // Save family members to the family_members table (replace all for this referral)
+      if (family_members && currentReferralId) {
+        await supabase.from('family_members').delete().eq('referral_id', currentReferralId);
+        if (family_members.length > 0) {
+          const memberRows = family_members.map((m: any, i: number) => ({
+            referral_id: currentReferralId,
+            relationship: m.relationship,
+            full_name: m.full_name || null,
+            dob: m.dob || null,
+            address: m.address || null,
+            city: m.city || null,
+            state: m.state || null,
+            zip: m.zip || null,
+            phone: m.phone || null,
+            email: m.email || null,
+            notes: m.notes || null,
+            sort_order: i,
+          }));
+          const { error: memberError } = await supabase.from('family_members').insert(memberRows);
+          if (memberError) throw memberError;
+        }
+      }
+
+      // Update local state (keep related data in local state for the review step)
       setReferralData(prev => ({ ...prev, ...stepData }));
 
       return result?.id;

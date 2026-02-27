@@ -3,11 +3,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { MailCheck } from 'lucide-react'
 
-export default function VerifyPage({
+export default async function VerifyPage({
   searchParams,
 }: {
-  searchParams: { email?: string }
+  searchParams: Promise<{ email?: string }>
 }) {
+  const { email } = await searchParams
   return (
     <Card>
       <CardHeader className="text-center">
@@ -16,8 +17,8 @@ export default function VerifyPage({
         </div>
         <CardTitle>Check Your Email</CardTitle>
         <CardDescription>
-          {searchParams.email
-            ? `We sent a confirmation link to ${searchParams.email}`
+          {email
+            ? `We sent a confirmation link to ${email}`
             : 'A confirmation link has been sent to your email address.'}
         </CardDescription>
       </CardHeader>

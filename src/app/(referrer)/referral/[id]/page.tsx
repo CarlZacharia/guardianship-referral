@@ -11,8 +11,9 @@ export const metadata: Metadata = {
 export default async function ReferralDetailPage({
   params,
 }: {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }) {
+  const { id } = await params
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
@@ -25,7 +26,7 @@ export default async function ReferralDetailPage({
       referral_documents(*),
       facilities(*)
     `)
-    .eq('id', params.id)
+    .eq('id', id)
     .eq('referrer_id', user!.id)
     .single()
 
@@ -42,7 +43,7 @@ export default async function ReferralDetailPage({
           </p>
         </div>
         <ReferralForm
-          referralId={params.id}
+          referralId={id}
           initialData={referral}
           userId={user!.id}
         />

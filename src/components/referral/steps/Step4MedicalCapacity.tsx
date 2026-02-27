@@ -147,9 +147,15 @@ export function Step4MedicalCapacity({ defaultValues, onComplete, navProps }: St
                         min={0}
                         max={15}
                         placeholder="0–15"
-                        {...field}
                         value={field.value ?? ''}
-                        onChange={e => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
+                        onChange={e => {
+                          if (!e.target.value) return field.onChange(undefined);
+                          const n = parseInt(e.target.value);
+                          if (n >= 0 && n <= 15) field.onChange(n);
+                        }}
+                        onBlur={field.onBlur}
+                        name={field.name}
+                        ref={field.ref}
                       />
                     </FormControl>
                     <FormDescription className="text-xs">

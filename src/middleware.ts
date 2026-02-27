@@ -33,7 +33,7 @@ export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
   // Public routes — no auth needed
-  const publicRoutes = ['/login', '/register', '/verify', '/forgot-password'];
+  const publicRoutes = ['/login', '/register', '/verify', '/forgot-password', '/auth/callback'];
   const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route));
 
   if (!user && !isPublicRoute) {
@@ -49,18 +49,39 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // Staff route guard — check role
-  if (user && pathname.startsWith('/staff')) {
+  // For authenticated users on protected routes, fetch profile once
+  // and handle both onboarding gating and staff role checks
+  if (user && !isPublicRoute) {
     const { data: profile } = await supabase
       .from('profiles')
-      .select('role')
+      .select('role, onboarding_completed')
       .eq('id', user.id)
       .single();
 
-    if (!profile || !['staff', 'admin'].includes(profile.role)) {
-      const url = request.nextUrl.clone();
-      url.pathname = '/dashboard';
-      return NextResponse.redirect(url);
+    const isOnboardingRoute = pathname.startsWith('/onboarding');
+    const isStaffOrAdmin = profile && ['staff', 'admin'].includes(profile.role);
+
+    // Onboarding gate — referrers must complete onboarding before accessing the app
+    if (profile && !isStaffOrAdmin) {
+      if (!profile.onboarding_completed && !isOnboardingRoute) {
+        const url = request.nextUrl.clone();
+        url.pathname = '/onboarding';
+        return NextResponse.redirect(url);
+      }
+      if (profile.onboarding_completed && isOnboardingRoute) {
+        const url = request.nextUrl.clone();
+        url.pathname = '/dashboard';
+        return NextResponse.redirect(url);
+      }
+    }
+
+    // Staff route guard — check role
+    if (pathname.startsWith('/staff')) {
+      if (!isStaffOrAdmin) {
+        const url = request.nextUrl.clone();
+        url.pathname = '/dashboard';
+        return NextResponse.redirect(url);
+      }
     }
   }
 

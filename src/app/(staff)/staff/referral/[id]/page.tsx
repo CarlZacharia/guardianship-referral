@@ -11,8 +11,9 @@ export const metadata: Metadata = {
 export default async function StaffReferralDetail({
   params,
 }: {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }) {
+  const { id } = await params
   const supabase = await createClient()
 
   const { data: referral } = await supabase
@@ -25,7 +26,7 @@ export default async function StaffReferralDetail({
       facilities(*),
       profiles!referrer_id(first_name, last_name, organization, phone, email)
     `)
-    .eq('id', params.id)
+    .eq('id', id)
     .single()
 
   if (!referral) notFound()

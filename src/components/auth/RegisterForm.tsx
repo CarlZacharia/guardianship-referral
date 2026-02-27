@@ -14,6 +14,7 @@ import {
 import { Separator } from '@/components/ui/separator'
 import Link from 'next/link'
 import { Loader2 } from 'lucide-react'
+import { createProfile } from '@/app/actions/create-profile'
 
 const REFERRER_TYPES = [
   { value: 'nursing_home', label: 'Nursing Home / SNF' },
@@ -81,9 +82,9 @@ export function RegisterForm() {
       return
     }
 
-    // Create profile record
+    // Create profile record via server action (uses service role to bypass RLS)
     if (data.user) {
-      const { error: profileError } = await supabase.from('profiles').insert({
+      const result = await createProfile({
         id: data.user.id,
         email: form.email,
         first_name: form.first_name,
@@ -91,10 +92,11 @@ export function RegisterForm() {
         organization: form.organization,
         phone: form.phone,
         role: 'referrer',
+        referrer_type: form.referrer_type || undefined,
       })
 
-      if (profileError) {
-        setError(profileError.message)
+      if (result.error) {
+        setError(result.error)
         setLoading(false)
         return
       }
