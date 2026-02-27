@@ -26,6 +26,7 @@ export function StaffNav({ profile }: { profile: Profile }) {
   const navLinks = [
     { href: '/staff/dashboard', label: 'All Referrals', icon: LayoutDashboard },
     { href: '/staff/facilities', label: 'Facilities', icon: Building2 },
+    { href: '/staff/referrers', label: 'Referrers', icon: Users },
   ]
 
   return (
