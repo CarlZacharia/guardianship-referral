@@ -1,12 +1,14 @@
 'use client'
 
-// src/components/referral/steps/Step4MedicalCapacity.tsx
+// src/components/referral/steps/Step3MedicalCapacity.tsx
 // Shows for: Guardianship Only, Both
 
+import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { step4Schema, Step4FormData } from '@/lib/validations/referral.schema'
-import { Referral, CAPACITY_LABELS, CapacityLevel } from '@/lib/types/referral.types'
+import { step3Schema, Step3FormData } from '@/lib/validations/referral.schema'
+import { Referral, CAPACITY_LABELS, CapacityLevel, AutoSaveProps } from '@/lib/types/referral.types'
+import { useAutoSave } from '@/hooks/use-auto-save'
 import { StepNavigation, StepNavProps } from '../StepNavigation'
 import {
   Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription
@@ -21,10 +23,11 @@ import { Switch } from '@/components/ui/switch'
 import { HeartPulse, Stethoscope, Brain } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-interface Step4Props {
+interface Step3Props {
   defaultValues: Partial<Referral>
   onComplete: (data: Partial<Referral>) => Promise<void>
   navProps: StepNavProps
+  autoSave: AutoSaveProps
 }
 
 const CAPACITY_DESCRIPTIONS: Record<CapacityLevel, string> = {
@@ -34,13 +37,14 @@ const CAPACITY_DESCRIPTIONS: Record<CapacityLevel, string> = {
   has_capacity: 'Currently has legal capacity to make decisions',
 }
 
-export function Step4MedicalCapacity({ defaultValues, onComplete, navProps }: Step4Props) {
-  const form = useForm<Step4FormData>({
-    resolver: zodResolver(step4Schema),
+export function Step3MedicalCapacity({ defaultValues, onComplete, navProps, autoSave }: Step3Props) {
+  const form = useForm<Step3FormData>({
+    resolver: zodResolver(step3Schema),
     defaultValues: {
       capacity_level: defaultValues.capacity_level,
       bims_score: defaultValues.bims_score ?? undefined,
       diagnoses: defaultValues.diagnoses || '',
+      allergies: defaultValues.allergies || '',
       medications: defaultValues.medications || '',
       mental_health_history: defaultValues.mental_health_history || '',
       dnr: defaultValues.dnr || false,
@@ -50,8 +54,19 @@ export function Step4MedicalCapacity({ defaultValues, onComplete, navProps }: St
     },
   })
 
+  const { saveStatus, flushSave } = useAutoSave({
+    form,
+    stepNumber: autoSave.stepNumber,
+    saveStepData: autoSave.save,
+  })
+
+  useEffect(() => {
+    autoSave.registerFlush(flushSave)
+    return () => autoSave.registerFlush(null)
+  }, [autoSave, flushSave])
+
   const handleNext = form.handleSubmit(async (data) => {
-    await onComplete(data)
+    await onComplete(data as Partial<Referral>)
   })
 
   const selectedCapacity = form.watch('capacity_level')
@@ -103,7 +118,7 @@ export function Step4MedicalCapacity({ defaultValues, onComplete, navProps }: St
                               )}
                             >
                               <div className={cn(
-                                'w-4 h-4 rounded-full border-2 mt-0.5 flex-shrink-0',
+                                'w-4 h-4 rounded-full border-2 mt-0.5 shrink-0',
                                 isSelected ? 'border-primary bg-primary' : 'border-muted-foreground'
                               )} />
                               <div>
@@ -134,7 +149,7 @@ export function Step4MedicalCapacity({ defaultValues, onComplete, navProps }: St
               <Separator className="flex-1" />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-4 items-start">
               <FormField
                 control={form.control}
                 name="bims_score"
@@ -172,7 +187,7 @@ export function Step4MedicalCapacity({ defaultValues, onComplete, navProps }: St
                   <FormItem>
                     <FormLabel>DNR Order</FormLabel>
                     <div className={cn(
-                      'flex items-center justify-between p-3 rounded-lg border mt-2',
+                      'flex items-center justify-between px-3 h-10 rounded-md border',
                       field.value ? 'border-amber-300 bg-amber-50' : 'border-input'
                     )}>
                       <span className="text-sm">{field.value ? 'DNR in place' : 'No DNR'}</span>
@@ -194,52 +209,45 @@ export function Step4MedicalCapacity({ defaultValues, onComplete, navProps }: St
               <Separator className="flex-1" />
             </div>
 
-            <FormField
-              control={form.control}
-              name="diagnoses"
+            <FormField control={form.control} name="diagnoses"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Diagnoses / Medical Conditions</FormLabel>
                   <FormControl>
-                    <Textarea
-                      placeholder="List current diagnoses (e.g., Alzheimer's dementia, Type 2 diabetes, CHF...)"
-                      rows={3}
-                      {...field}
-                    />
+                    <Textarea placeholder="List current diagnoses (e.g., Alzheimer's dementia, Type 2 diabetes, CHF...)" rows={3} {...field} />
                   </FormControl>
                 </FormItem>
               )}
             />
 
-            <FormField
-              control={form.control}
-              name="medications"
+            <FormField control={form.control} name="allergies"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Allergies</FormLabel>
+                  <FormControl>
+                    <Textarea placeholder="List known allergies (medications, food, environmental...)" rows={2} {...field} />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+
+            <FormField control={form.control} name="medications"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Current Medications</FormLabel>
                   <FormControl>
-                    <Textarea
-                      placeholder="List current medications and dosages if known..."
-                      rows={3}
-                      {...field}
-                    />
+                    <Textarea placeholder="List current medications and dosages if known..." rows={3} {...field} />
                   </FormControl>
                 </FormItem>
               )}
             />
 
-            <FormField
-              control={form.control}
-              name="mental_health_history"
+            <FormField control={form.control} name="mental_health_history"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Mental Health History</FormLabel>
                   <FormControl>
-                    <Textarea
-                      placeholder="Include any mental health diagnoses, treatment history, or relevant behavioral history..."
-                      rows={3}
-                      {...field}
-                    />
+                    <Textarea placeholder="Include any mental health diagnoses, treatment history, or relevant behavioral history..." rows={3} {...field} />
                   </FormControl>
                 </FormItem>
               )}
@@ -255,40 +263,28 @@ export function Step4MedicalCapacity({ defaultValues, onComplete, navProps }: St
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="physician_name"
+              <FormField control={form.control} name="physician_name"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Physician Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Dr. First Last" {...field} />
-                    </FormControl>
+                    <FormControl><Input placeholder="Dr. First Last" {...field} /></FormControl>
                   </FormItem>
                 )}
               />
-              <FormField
-                control={form.control}
-                name="physician_phone"
+              <FormField control={form.control} name="physician_phone"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Physician Phone</FormLabel>
-                    <FormControl>
-                      <Input type="tel" {...field} />
-                    </FormControl>
+                    <FormControl><Input type="tel" {...field} /></FormControl>
                   </FormItem>
                 )}
               />
             </div>
-            <FormField
-              control={form.control}
-              name="physician_address"
+            <FormField control={form.control} name="physician_address"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Physician Address</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Practice name and address" {...field} />
-                  </FormControl>
+                  <FormControl><Input placeholder="Practice name and address" {...field} /></FormControl>
                 </FormItem>
               )}
             />
@@ -299,9 +295,9 @@ export function Step4MedicalCapacity({ defaultValues, onComplete, navProps }: St
       <StepNavigation
         {...navProps}
         onNext={handleNext}
-        currentStepData={form.getValues()}
+        currentStepData={form.getValues() as Partial<Referral>}
+        saveStatus={saveStatus}
       />
     </Card>
   )
 }
-

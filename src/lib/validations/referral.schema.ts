@@ -4,73 +4,22 @@
 import { z } from 'zod';
 
 // ============================================================
-// STEP 1 — Referral Source
+// Shared sub-schemas
 // ============================================================
-export const step1Schema = z.object({
-  facility_id: z.string().optional(),
-  facility_name_freetext: z.string().optional(),
-  urgency: z.enum(['routine', 'urgent', 'emergency']),
-}).refine(
-  data => data.facility_id || data.facility_name_freetext,
-  { message: 'Please select a facility or enter the facility name', path: ['facility_name_freetext'] }
-);
-
-// ============================================================
-// STEP 2 — Case Type
-// ============================================================
-export const step2Schema = z.object({
-  referral_type: z.enum(['guardianship', 'medicaid', 'both'], {
-    required_error: 'Please select a referral type',
-  }),
+const familyMemberSchema = z.object({
+  id: z.string().optional(),
+  relationship: z.enum(['child', 'sibling', 'parent', 'other_nok', 'spouse']),
+  full_name: z.string().min(1, 'Name is required'),
+  dob: z.string().optional(),
+  address: z.string().optional(),
+  city: z.string().optional(),
+  state: z.string().optional(),
+  zip: z.string().optional(),
+  phone: z.string().optional(),
+  email: z.string().email('Invalid email').optional().or(z.literal('')),
+  notes: z.string().optional(),
 });
 
-// ============================================================
-// STEP 3 — Client Identity
-// ============================================================
-export const step3Schema = z.object({
-  client_first_name: z.string().min(1, 'First name is required'),
-  client_last_name: z.string().min(1, 'Last name is required'),
-  client_full_legal_name: z.string().optional(),
-  client_dob: z.string().min(1, 'Date of birth is required'),
-  client_sex: z.enum(['male', 'female', 'other', 'unknown']),
-  client_ssn_last4: z.string().regex(/^\d{4}$/, 'Enter last 4 digits only').optional().or(z.literal('')),
-  client_language: z.string().optional(),
-  client_county: z.string().optional(),
-  client_phone: z.string().optional(),
-  client_email: z.string().email('Invalid email').optional().or(z.literal('')),
-  client_home_address: z.string().optional(),
-  client_home_city: z.string().optional(),
-  client_home_state: z.string().optional(),
-  client_home_zip: z.string().optional(),
-  client_current_address: z.string().optional(),
-  client_current_city: z.string().optional(),
-  client_current_state: z.string().optional(),
-  client_current_zip: z.string().optional(),
-  admission_date: z.string().optional(),
-  amount_owed_facility: z.number().min(0).optional().nullable(),
-  facility_monthly_cost: z.number().min(0).optional().nullable(),
-});
-
-// ============================================================
-// STEP 4 — Medical & Capacity
-// ============================================================
-export const step4Schema = z.object({
-  capacity_level: z.enum(['no_capacity', 'limited_capacity', 'substance_abuse', 'has_capacity'], {
-    required_error: 'Please select a capacity level',
-  }),
-  bims_score: z.number().min(0).max(15).optional().nullable(),
-  diagnoses: z.string().optional(),
-  medications: z.string().optional(),
-  mental_health_history: z.string().optional(),
-  dnr: z.boolean().optional(),
-  physician_name: z.string().optional(),
-  physician_address: z.string().optional(),
-  physician_phone: z.string().optional(),
-});
-
-// ============================================================
-// STEP 5 — Financial
-// ============================================================
 const assetSchema = z.object({
   id: z.string().optional(),
   asset_type: z.enum([
@@ -87,71 +36,182 @@ const assetSchema = z.object({
   notes: z.string().optional(),
 });
 
-export const step5Schema = z.object({
+// ============================================================
+// STEP 1 — Referral (Source + Case Type + Client + Marital)
+// ============================================================
+export const step1Schema = z.object({
+  // Referral source
+  facility_id: z.string().optional(),
+  facility_name_freetext: z.string().optional(),
+  urgency: z.enum(['routine', 'urgent', 'emergency']),
+
+  // Case type
+  referral_type: z.enum(['guardianship', 'medicaid', 'both'], {
+    required_error: 'Please select a referral type',
+  }),
+
+  // Client identity
+  client_first_name: z.string().min(1, 'First name is required'),
+  client_last_name: z.string().min(1, 'Last name is required'),
+  client_full_legal_name: z.string().optional(),
+  client_dob: z.string().min(1, 'Date of birth is required'),
+  client_sex: z.enum(['male', 'female', 'other', 'unknown']),
+  client_ssn_last4: z.string().regex(/^\d{4}$/, 'Enter last 4 digits only').optional().or(z.literal('')),
+  client_language: z.string().optional(),
+  client_county: z.string().optional(),
+  client_phone: z.string().optional(),
+  client_email: z.string().email('Invalid email').optional().or(z.literal('')),
+
+  // Addresses
+  client_home_address: z.string().optional(),
+  client_home_city: z.string().optional(),
+  client_home_state: z.string().optional(),
+  client_home_zip: z.string().optional(),
+  client_current_address: z.string().optional(),
+  client_current_city: z.string().optional(),
+  client_current_state: z.string().optional(),
+  client_current_zip: z.string().optional(),
+
+  // Facility account
+  admission_date: z.string().optional(),
+  amount_owed_facility: z.number().min(0).optional().nullable(),
+  facility_monthly_cost: z.number().min(0).optional().nullable(),
+
+  // Marital status (moved from old Step 6)
+  is_married: z.boolean().optional(),
+  spouse_name: z.string().optional(),
+  spouse_dob: z.string().optional(),
+  spouse_ssn_last4: z.string().regex(/^\d{4}$/).optional().or(z.literal('')),
+  spouse_email: z.string().email('Invalid email').optional().or(z.literal('')),
+  spouse_address: z.string().optional(),
+  spouse_phone: z.string().optional(),
+}).refine(
+  data => data.facility_id || data.facility_name_freetext,
+  { message: 'Please select a facility or enter the facility name', path: ['facility_name_freetext'] }
+);
+
+// ============================================================
+// STEP 2 — Family - Contacts - Agents
+// ============================================================
+export const step2Schema = z.object({
+  // Family members
+  family_members: z.array(familyMemberSchema).optional(),
+
+  // Legal documents — POA
+  has_poa: z.boolean().optional(),
+  poa_agent_name: z.string().optional(),
+  poa_date_executed: z.string().optional(),
+  poa_contact: z.string().optional(),
+
+  // Legal documents — HC Surrogate
+  has_hc_surrogate: z.boolean().optional(),
+  hc_surrogate_name: z.string().optional(),
+  hc_surrogate_date_executed: z.string().optional(),
+  hc_surrogate_contact: z.string().optional(),
+
+  // Legal documents — Living Will
+  has_living_will: z.boolean().optional(),
+  living_will_agent_name: z.string().optional(),
+  living_will_date_executed: z.string().optional(),
+  living_will_contact: z.string().optional(),
+
+  // Legal documents — Trust
+  has_trust: z.boolean().optional(),
+  trust_type: z.string().optional(),
+  trust_trustee_name: z.string().optional(),
+  trust_date_executed: z.string().optional(),
+  trust_contact: z.string().optional(),
+
+  // Legal documents — Guardianship
+  has_prior_guardianship: z.boolean().optional(),
+  prior_guardianship_details: z.string().optional(),
+  existing_guardian_name: z.string().optional(),
+  guardianship_date_executed: z.string().optional(),
+  guardianship_contact: z.string().optional(),
+
+  // Benefits & support
+  disability_benefits: z.boolean().optional(),
+  veteran_services: z.boolean().optional(),
+  other_services: z.string().optional(),
+
+  // Legal representation
+  legal_rep_name: z.string().optional(),
+  legal_rep_contact: z.string().optional(),
+
+  // Special needs
+  special_needs: z.string().optional(),
+});
+
+// ============================================================
+// STEP 3 — Medical & Capacity
+// ============================================================
+export const step3Schema = z.object({
+  capacity_level: z.enum(['no_capacity', 'limited_capacity', 'substance_abuse', 'has_capacity'], {
+    required_error: 'Please select a capacity level',
+  }),
+  bims_score: z.number().min(0).max(15).optional().nullable(),
+  diagnoses: z.string().optional(),
+  allergies: z.string().optional(),
+  medications: z.string().optional(),
+  mental_health_history: z.string().optional(),
+  dnr: z.boolean().optional(),
+  physician_name: z.string().optional(),
+  physician_address: z.string().optional(),
+  physician_phone: z.string().optional(),
+});
+
+// ============================================================
+// STEP 4 — Financial
+// ============================================================
+const incomeEntrySchema = z.object({
+  description: z.string().optional().default(''),
+  amount: z.number().min(0).optional().nullable(),
+});
+
+const insuranceEntrySchema = z.object({
+  description: z.string().optional().default(''),
+  amount: z.number().min(0).optional().nullable(),
+});
+
+export const step4Schema = z.object({
+  income_entries: z.array(incomeEntrySchema).optional(),
   monthly_income: z.number().min(0).optional().nullable(),
-  income_sources: z.string().optional(),
+  medical_insurance_entries: z.array(insuranceEntrySchema).optional(),
   medical_insurance_cost: z.number().min(0).optional().nullable(),
   medicaid_status: z.enum(['yes', 'no', 'applied']).optional(),
   rep_payee_status: z.enum(['yes', 'no', 'applied']).optional(),
   va_benefits: z.boolean().optional(),
   va_benefit_details: z.string().optional(),
+  assets_unknown: z.boolean().optional(),
   assets: z.array(assetSchema).optional(),
 });
 
 // ============================================================
-// STEP 6 — Family & Contacts
+// STEP 5 — Documents & Uploads
 // ============================================================
-const familyMemberSchema = z.object({
-  id: z.string().optional(),
-  relationship: z.enum(['child', 'sibling', 'parent', 'other_nok', 'spouse']),
-  full_name: z.string().min(1, 'Name is required'),
-  dob: z.string().optional(),
-  address: z.string().optional(),
-  city: z.string().optional(),
-  state: z.string().optional(),
-  zip: z.string().optional(),
-  phone: z.string().optional(),
-  email: z.string().email('Invalid email').optional().or(z.literal('')),
+export const step5Schema = z.object({
   notes: z.string().optional(),
 });
 
+// ============================================================
+// STEP 6 — Medicaid
+// ============================================================
 export const step6Schema = z.object({
-  is_married: z.boolean().optional(),
-  spouse_name: z.string().optional(),
-  spouse_dob: z.string().optional(),
-  spouse_ssn_last4: z.string().regex(/^\d{4}$/).optional().or(z.literal('')),
-  spouse_address: z.string().optional(),
-  spouse_phone: z.string().optional(),
-  family_members: z.array(familyMemberSchema).optional(),
-});
-
-// ============================================================
-// STEP 7 — Legal Documents
-// ============================================================
-export const step7Schema = z.object({
-  has_poa: z.boolean().optional(),
-  poa_agent_name: z.string().optional(),
-  has_hc_surrogate: z.boolean().optional(),
-  hc_surrogate_name: z.string().optional(),
-  has_living_will: z.boolean().optional(),
-  has_trust: z.boolean().optional(),
-  trust_type: z.string().optional(),
-  has_prior_guardianship: z.boolean().optional(),
-  prior_guardianship_details: z.string().optional(),
-  existing_guardian_name: z.string().optional(),
-  disability_benefits: z.boolean().optional(),
-  veteran_services: z.boolean().optional(),
-  other_services: z.string().optional(),
-  legal_rep_name: z.string().optional(),
-  legal_rep_contact: z.string().optional(),
-  special_needs: z.string().optional(),
-});
-
-// ============================================================
-// STEP 8 — Documents & Notes
-// ============================================================
-export const step8Schema = z.object({
-  notes: z.string().optional(),
+  medicaid_date_of_need: z.string().optional(),
+  medicaid_application_type: z.enum(['new', 'renewal']).optional(),
+  medicaid_application_number: z.string().optional(),
+  medicaid_case_number: z.string().optional(),
+  medicaid_current_status: z.string().optional(),
+  medicaid_application_date: z.string().optional(),
+  medicaid_filed_by: z.string().optional(),
+  medicaid_contact_name: z.string().optional(),
+  medicaid_contact_address: z.string().optional(),
+  medicaid_contact_phone: z.string().optional(),
+  medicaid_contact_email: z.string().optional(),
+  medicaid_myaccess_login: z.string().optional(),
+  medicaid_myaccess_pw: z.string().optional(),
+  medicaid_documents_uploaded: z.string().optional(),
+  medicaid_comments: z.string().optional(),
 });
 
 // ============================================================
@@ -162,10 +222,8 @@ export const stepSchemas = {
   2: step2Schema,
   3: step3Schema,
   4: step4Schema,
-  5: step5Schema,
-  6: step6Schema,
-  7: step7Schema,
-  8: step8Schema,
+  5: step6Schema,
+  6: step5Schema,
 } as const;
 
 export type Step1FormData = z.infer<typeof step1Schema>;
@@ -174,6 +232,3 @@ export type Step3FormData = z.infer<typeof step3Schema>;
 export type Step4FormData = z.infer<typeof step4Schema>;
 export type Step5FormData = z.infer<typeof step5Schema>;
 export type Step6FormData = z.infer<typeof step6Schema>;
-export type Step7FormData = z.infer<typeof step7Schema>;
-export type Step8FormData = z.infer<typeof step8Schema>;
-

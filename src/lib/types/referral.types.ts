@@ -8,6 +8,7 @@ export type UrgencyLevel = 'routine' | 'urgent' | 'emergency';
 export type ReferralStatus = 'draft' | 'submitted' | 'in_review' | 'accepted' | 'closed';
 export type CapacityLevel = 'no_capacity' | 'limited_capacity' | 'substance_abuse' | 'has_capacity';
 export type MedicaidStatus = 'yes' | 'no' | 'applied';
+export type MedicaidApplicationType = 'new' | 'renewal';
 export type UserRole = 'referrer' | 'staff' | 'admin';
 export type ReferrerType =
   | 'nursing_home' | 'hospital' | 'home_health'
@@ -26,7 +27,9 @@ export type FamilyRelationship = 'child' | 'sibling' | 'parent' | 'other_nok' | 
 export type DocumentType =
   | 'facesheet' | 'id_drivers_license' | 'id_passport' | 'id_state'
   | 'medical_report' | 'poa' | 'hc_surrogate' | 'living_will'
-  | 'trust' | 'outstanding_balance' | 'bank_statement' | 'other';
+  | 'trust' | 'outstanding_balance' | 'bank_statement'
+  | 'resident_funds' | 'incapacity_determination' | 'level_of_care'
+  | 'other';
 
 // ============================================================
 // PROFILE
@@ -181,6 +184,7 @@ export interface Referral {
   capacity_level?: CapacityLevel;
   bims_score?: number;
   diagnoses?: string;
+  allergies?: string;
   medications?: string;
   mental_health_history?: string;
   dnr?: boolean;
@@ -189,33 +193,48 @@ export interface Referral {
   physician_phone?: string;
 
   // Financial
+  income_entries?: IncomeEntry[];
   monthly_income?: number;
-  income_sources?: string;
+  medical_insurance_entries?: InsuranceEntry[];
   medical_insurance_cost?: number;
   medicaid_status?: MedicaidStatus;
   rep_payee_status?: MedicaidStatus;
   va_benefits?: boolean;
   va_benefit_details?: string;
+  assets_unknown?: boolean;
 
   // Spouse
   is_married?: boolean;
   spouse_name?: string;
   spouse_dob?: string;
   spouse_ssn_last4?: string;
+  spouse_email?: string;
   spouse_address?: string;
   spouse_phone?: string;
 
   // Legal documents
   has_poa?: boolean;
   poa_agent_name?: string;
+  poa_date_executed?: string;
+  poa_contact?: string;
   has_hc_surrogate?: boolean;
   hc_surrogate_name?: string;
+  hc_surrogate_date_executed?: string;
+  hc_surrogate_contact?: string;
   has_living_will?: boolean;
+  living_will_agent_name?: string;
+  living_will_date_executed?: string;
+  living_will_contact?: string;
   has_trust?: boolean;
   trust_type?: string;
+  trust_trustee_name?: string;
+  trust_date_executed?: string;
+  trust_contact?: string;
   has_prior_guardianship?: boolean;
   prior_guardianship_details?: string;
   existing_guardian_name?: string;
+  guardianship_date_executed?: string;
+  guardianship_contact?: string;
 
   // Support services
   disability_benefits?: boolean;
@@ -229,6 +248,23 @@ export interface Referral {
   // Legal rep
   legal_rep_name?: string;
   legal_rep_contact?: string;
+
+  // Medicaid
+  medicaid_date_of_need?: string;
+  medicaid_application_type?: MedicaidApplicationType;
+  medicaid_application_number?: string;
+  medicaid_case_number?: string;
+  medicaid_current_status?: string;
+  medicaid_application_date?: string;
+  medicaid_filed_by?: string;
+  medicaid_contact_name?: string;
+  medicaid_contact_address?: string;
+  medicaid_contact_phone?: string;
+  medicaid_contact_email?: string;
+  medicaid_myaccess_login?: string;
+  medicaid_myaccess_pw?: string;
+  medicaid_documents_uploaded?: string;
+  medicaid_comments?: string;
 
   // Notes & submission
   notes?: string;
@@ -249,6 +285,15 @@ export interface Referral {
 }
 
 // ============================================================
+// AUTO-SAVE PROPS (passed from ReferralForm to each step)
+// ============================================================
+export interface AutoSaveProps {
+  save: (data: Partial<Referral>, step: number) => Promise<string | null>;
+  stepNumber: number;
+  registerFlush: (fn: (() => Promise<void>) | null) => void;
+}
+
+// ============================================================
 // FORM STEP DATA (subset types per step for React Hook Form)
 // ============================================================
 
@@ -256,13 +301,7 @@ export interface Step1Data {
   facility_id?: string;
   facility_name_freetext?: string;
   urgency: UrgencyLevel;
-}
-
-export interface Step2Data {
   referral_type: ReferralType;
-}
-
-export interface Step3Data {
   client_first_name: string;
   client_last_name: string;
   client_full_legal_name?: string;
@@ -284,42 +323,17 @@ export interface Step3Data {
   admission_date?: string;
   amount_owed_facility?: number;
   facility_monthly_cost?: number;
-}
-
-export interface Step4Data {
-  capacity_level: CapacityLevel;
-  bims_score?: number;
-  diagnoses?: string;
-  medications?: string;
-  mental_health_history?: string;
-  dnr?: boolean;
-  physician_name?: string;
-  physician_address?: string;
-  physician_phone?: string;
-}
-
-export interface Step5Data {
-  monthly_income?: number;
-  income_sources?: string;
-  medical_insurance_cost?: number;
-  medicaid_status?: MedicaidStatus;
-  rep_payee_status?: MedicaidStatus;
-  va_benefits?: boolean;
-  va_benefit_details?: string;
-  assets?: Asset[];
-}
-
-export interface Step6Data {
   is_married?: boolean;
   spouse_name?: string;
   spouse_dob?: string;
   spouse_ssn_last4?: string;
+  spouse_email?: string;
   spouse_address?: string;
   spouse_phone?: string;
-  family_members?: FamilyMember[];
 }
 
-export interface Step7Data {
+export interface Step2Data {
+  family_members?: FamilyMember[];
   has_poa?: boolean;
   poa_agent_name?: string;
   has_hc_surrogate?: boolean;
@@ -338,9 +352,52 @@ export interface Step7Data {
   special_needs?: string;
 }
 
-export interface Step8Data {
+export interface Step3Data {
+  capacity_level: CapacityLevel;
+  bims_score?: number;
+  diagnoses?: string;
+  allergies?: string;
+  medications?: string;
+  mental_health_history?: string;
+  dnr?: boolean;
+  physician_name?: string;
+  physician_address?: string;
+  physician_phone?: string;
+}
+
+export interface Step4Data {
+  income_entries?: IncomeEntry[];
+  monthly_income?: number;
+  medical_insurance_entries?: InsuranceEntry[];
+  medical_insurance_cost?: number;
+  medicaid_status?: MedicaidStatus;
+  rep_payee_status?: MedicaidStatus;
+  va_benefits?: boolean;
+  va_benefit_details?: string;
+  assets?: Asset[];
+}
+
+export interface Step5Data {
   notes?: string;
   documents?: ReferralDocument[];
+}
+
+export interface Step6Data {
+  medicaid_date_of_need?: string;
+  medicaid_application_type?: MedicaidApplicationType;
+  medicaid_application_number?: string;
+  medicaid_case_number?: string;
+  medicaid_current_status?: string;
+  medicaid_application_date?: string;
+  medicaid_filed_by?: string;
+  medicaid_contact_name?: string;
+  medicaid_contact_address?: string;
+  medicaid_contact_phone?: string;
+  medicaid_contact_email?: string;
+  medicaid_myaccess_login?: string;
+  medicaid_myaccess_pw?: string;
+  medicaid_documents_uploaded?: string;
+  medicaid_comments?: string;
 }
 
 // Labels for display
@@ -413,4 +470,21 @@ export const FLORIDA_COUNTIES = [
   'Santa Rosa', 'Sarasota', 'Seminole', 'Sumter', 'Suwannee',
   'Taylor', 'Union', 'Volusia', 'Wakulla', 'Walton', 'Washington'
 ];
+
+export const INCOME_LIMIT = {
+  year: 2026,
+  income_limit: 2982,
+};
+
+export const P_AND_A = 162;
+
+export interface IncomeEntry {
+  description: string;
+  amount: number | undefined;
+}
+
+export interface InsuranceEntry {
+  description: string;
+  amount: number | undefined;
+}
 

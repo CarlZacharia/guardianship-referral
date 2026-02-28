@@ -3,8 +3,9 @@
 // src/components/referral/StepNavigation.tsx
 
 import { Button } from '@/components/ui/button';
-import { Loader2, ChevronLeft, ChevronRight, Save } from 'lucide-react';
+import { Loader2, ChevronLeft, ChevronRight, Save, Check, AlertCircle } from 'lucide-react';
 import { Referral } from '@/lib/types/referral.types';
+import { SaveStatus } from '@/hooks/use-auto-save';
 
 export interface StepNavProps {
   onBack: () => void;
@@ -17,6 +18,7 @@ export interface StepNavProps {
 interface StepNavigationProps extends StepNavProps {
   onNext: () => void;           // triggers form submission / validation
   currentStepData?: Partial<Referral>; // for save draft
+  saveStatus?: SaveStatus;
 }
 
 export function StepNavigation({
@@ -27,6 +29,7 @@ export function StepNavigation({
   isSaving,
   isFirstStep,
   isLastStep,
+  saveStatus,
 }: StepNavigationProps) {
   return (
     <div className="flex items-center justify-between pt-6 mt-6 border-t">
@@ -42,6 +45,26 @@ export function StepNavigation({
       </Button>
 
       <div className="flex items-center gap-3">
+        {/* Auto-save status indicator */}
+        {saveStatus === 'saving' && (
+          <span className="text-xs text-muted-foreground flex items-center gap-1 animate-pulse">
+            <Loader2 className="w-3 h-3 animate-spin" />
+            Saving...
+          </span>
+        )}
+        {saveStatus === 'saved' && (
+          <span className="text-xs text-green-600 flex items-center gap-1">
+            <Check className="w-3 h-3" />
+            Saved
+          </span>
+        )}
+        {saveStatus === 'error' && (
+          <span className="text-xs text-destructive flex items-center gap-1">
+            <AlertCircle className="w-3 h-3" />
+            Save failed
+          </span>
+        )}
+
         {/* Save Draft */}
         {!isLastStep && (
           <Button
@@ -78,4 +101,3 @@ export function StepNavigation({
     </div>
   );
 }
-

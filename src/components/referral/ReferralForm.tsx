@@ -3,21 +3,19 @@
 // src/components/referral/ReferralForm.tsx
 // Main orchestrator for the multi-step referral form
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { Referral, ReferralType } from '@/lib/types/referral.types';
 import { StepIndicator } from './StepIndicator';
 import { StepNavigation } from './StepNavigation';
-import { Step1ReferralSource } from './steps/Step1ReferralSource';
-import { Step2CaseType } from './steps/Step2CaseType';
-import { Step3ClientIdentity } from './steps/Step3ClientIdentity';
-import { Step4MedicalCapacity } from './steps/Step4MedicalCapacity';
-import { Step5Financial } from './steps/Step5Financial';
-import { Step6Family } from './steps/Step6Family';
-import { Step7LegalDocuments } from './steps/Step7LegalDocuments';
-import { Step8DocumentsNotes } from './steps/Step8DocumentsNotes';
-import { Step9ReviewSubmit } from './steps/Step9ReviewSubmit';
+import { Step1Referral } from './steps/Step1Referral';
+import { Step2FamilyContactsAgents } from './steps/Step2FamilyContactsAgents';
+import { Step3MedicalCapacity } from './steps/Step3MedicalCapacity';
+import { Step4Financial } from './steps/Step4Financial';
+import { Step5DocumentsNotes } from './steps/Step5DocumentsNotes';
+import { Step6Medicaid } from './steps/Step6Medicaid';
+import { Step7ReviewSubmit } from './steps/Step7ReviewSubmit';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
@@ -29,54 +27,42 @@ import { AlertCircle } from 'lucide-react';
 export const STEPS = [
   {
     number: 1,
-    label: 'Referral Source',
-    description: 'Who is making this referral?',
+    label: 'Referral',
+    description: 'Source, case type, and client information',
     requiredFor: ['guardianship', 'medicaid', 'both'] as ReferralType[],
   },
   {
     number: 2,
-    label: 'Case Type',
-    description: 'What type of case is this?',
+    label: 'Family - Agents',
+    description: 'Family members, legal documents, and support services',
     requiredFor: ['guardianship', 'medicaid', 'both'] as ReferralType[],
   },
   {
     number: 3,
-    label: 'Client Identity',
-    description: 'Basic client information',
-    requiredFor: ['guardianship', 'medicaid', 'both'] as ReferralType[],
-  },
-  {
-    number: 4,
     label: 'Medical & Capacity',
     description: 'Diagnoses, capacity, and physician',
     requiredFor: ['guardianship', 'both'] as ReferralType[],
   },
   {
-    number: 5,
+    number: 4,
     label: 'Financial',
     description: 'Income, assets, and benefits',
     requiredFor: ['guardianship', 'medicaid', 'both'] as ReferralType[],
   },
   {
+    number: 5,
+    label: 'Medicaid',
+    description: 'Medicaid application details',
+    requiredFor: ['guardianship', 'medicaid', 'both'] as ReferralType[],
+  },
+  {
     number: 6,
-    label: 'Family & Contacts',
-    description: 'Spouse, children, and next of kin',
-    requiredFor: ['guardianship', 'medicaid', 'both'] as ReferralType[],
-  },
-  {
-    number: 7,
-    label: 'Legal Documents',
-    description: 'Existing POAs, guardianship, trusts',
-    requiredFor: ['guardianship', 'medicaid', 'both'] as ReferralType[],
-  },
-  {
-    number: 8,
-    label: 'Documents & Notes',
+    label: 'Documents & Uploads',
     description: 'Upload attachments and add notes',
     requiredFor: ['guardianship', 'medicaid', 'both'] as ReferralType[],
   },
   {
-    number: 9,
+    number: 7,
     label: 'Review & Submit',
     description: 'Review all information and submit',
     requiredFor: ['guardianship', 'medicaid', 'both'] as ReferralType[],
@@ -107,16 +93,18 @@ export function ReferralForm({ referralId, initialData, userId }: ReferralFormPr
     !referralType || step.requiredFor.includes(referralType)
   );
 
-  // For step 4 (Medical): only required for guardianship or both
+  // For step 3 (Medical): only required for guardianship or both
   const showMedicalStep = !referralType || referralType === 'guardianship' || referralType === 'both';
 
   // Save current step data to Supabase
+  // silent=true for auto-save: skips isSaving flag and error toast
   const saveStepData = useCallback(async (
     stepData: Partial<Referral>,
     stepNumber: number,
-    isFinalSubmit = false
+    isFinalSubmit = false,
+    silent = false
   ) => {
-    setIsSaving(true);
+    if (!silent) setIsSaving(true);
     setError(null);
 
     try {
@@ -125,6 +113,22 @@ export function ReferralForm({ referralId, initialData, userId }: ReferralFormPr
         ...referralData,
         ...stepData,
       } as any;
+
+      // Convert empty-string UUID fields to null so PostgreSQL doesn't reject them
+      const uuidFields = ['facility_id'] as const;
+      for (const key of uuidFields) {
+        if ((referralFields as any)[key] === '') {
+          (referralFields as any)[key] = null;
+        }
+      }
+
+      // Convert empty-string date fields to null so PostgreSQL doesn't reject them
+      const dateFields = ['client_dob', 'admission_date', 'spouse_dob', 'submitted_date'] as const;
+      for (const key of dateFields) {
+        if ((referralFields as any)[key] === '') {
+          (referralFields as any)[key] = null;
+        }
+      }
 
       const payload: Partial<Referral> = {
         ...referralFields,
@@ -217,21 +221,33 @@ export function ReferralForm({ referralId, initialData, userId }: ReferralFormPr
         }
       }
 
-      // Update local state (keep related data in local state for the review step)
-      setReferralData(prev => ({ ...prev, ...stepData }));
+      // Update local state — include the updated steps_completed so
+      // subsequent saves don't overwrite previous step completions.
+      const updatedStepsCompleted = {
+        ...referralData.steps_completed,
+        [`step_${stepNumber}`]: true,
+      };
+      setReferralData(prev => ({
+        ...prev,
+        ...stepData,
+        steps_completed: updatedStepsCompleted,
+        current_step: stepNumber,
+      }));
 
       return result?.id;
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to save. Please try again.';
       setError(message);
-      toast({
-        title: 'Save Error',
-        description: message,
-        variant: 'destructive',
-      });
+      if (!silent) {
+        toast({
+          title: 'Save Error',
+          description: message,
+          variant: 'destructive',
+        });
+      }
       return null;
     } finally {
-      setIsSaving(false);
+      if (!silent) setIsSaving(false);
     }
   }, [referralData, savedReferralId, supabase, userId, toast]);
 
@@ -253,13 +269,37 @@ export function ReferralForm({ referralId, initialData, userId }: ReferralFormPr
     }
   }, [saveStepData, currentStep, activeSteps]);
 
-  const handleBack = useCallback(() => {
+  const handleBack = useCallback(async () => {
     const currentIndex = activeSteps.findIndex(s => s.number === currentStep);
     if (currentIndex > 0) {
+      await flushCurrentStepRef.current?.();
       setCurrentStep(activeSteps[currentIndex - 1].number);
       window.scrollTo(0, 0);
     }
   }, [currentStep, activeSteps]);
+
+  // Click a step in the indicator — allowed for completed steps and the next unlocked step
+  const handleStepClick = useCallback(async (stepNumber: number) => {
+    const completedSteps = referralData.steps_completed || {};
+
+    // Already-completed steps are always allowed (go back to edit)
+    if (completedSteps[`step_${stepNumber}`]) {
+      await flushCurrentStepRef.current?.();
+      setCurrentStep(stepNumber);
+      window.scrollTo(0, 0);
+      return;
+    }
+
+    // For uncompleted steps: every prior step must be completed
+    const targetIndex = activeSteps.findIndex(s => s.number === stepNumber);
+    for (let i = 0; i < targetIndex; i++) {
+      if (!completedSteps[`step_${activeSteps[i].number}`]) return;
+    }
+
+    await flushCurrentStepRef.current?.();
+    setCurrentStep(stepNumber);
+    window.scrollTo(0, 0);
+  }, [activeSteps, referralData.steps_completed]);
 
   const handleSaveDraft = useCallback(async (stepData: Partial<Referral>) => {
     await saveStepData(stepData, currentStep);
@@ -280,6 +320,27 @@ export function ReferralForm({ referralId, initialData, userId }: ReferralFormPr
     }
   }, [saveStepData, currentStep, toast, router]);
 
+  // ── Auto-save infrastructure ──
+  // Silent save wrapper for the useAutoSave hook (no isSaving flag, no error toast)
+  const silentSave = useCallback(async (
+    data: Partial<Referral>,
+    step: number,
+  ) => {
+    return saveStepData(data, step, false, true);
+  }, [saveStepData]);
+
+  // Ref to the current step's flushSave — called before step navigation
+  const flushCurrentStepRef = useRef<(() => Promise<void>) | null>(null);
+  const registerFlush = useCallback((fn: (() => Promise<void>) | null) => {
+    flushCurrentStepRef.current = fn;
+  }, []);
+
+  const autoSave = {
+    save: silentSave,
+    stepNumber: currentStep,
+    registerFlush,
+  };
+
   const isFirstStep = currentStep === activeSteps[0]?.number;
   const isLastStep = currentStep === activeSteps[activeSteps.length - 1]?.number;
 
@@ -299,6 +360,7 @@ export function ReferralForm({ referralId, initialData, userId }: ReferralFormPr
         steps={activeSteps}
         currentStep={currentStep}
         completedSteps={referralData.steps_completed || {}}
+        onStepClick={handleStepClick}
       />
 
       {/* Error Banner */}
@@ -312,69 +374,60 @@ export function ReferralForm({ referralId, initialData, userId }: ReferralFormPr
       {/* Step Content */}
       <div className="mt-8">
         {currentStep === 1 && (
-          <Step1ReferralSource
+          <Step1Referral
             defaultValues={referralData}
             onComplete={handleStepComplete}
             navProps={navProps}
+            autoSave={autoSave}
           />
         )}
         {currentStep === 2 && (
-          <Step2CaseType
-            defaultValues={referralData}
-            onComplete={handleStepComplete}
-            navProps={navProps}
-          />
-        )}
-        {currentStep === 3 && (
-          <Step3ClientIdentity
+          <Step2FamilyContactsAgents
             defaultValues={referralData}
             referralType={referralType}
+            referralId={savedReferralId}
             onComplete={handleStepComplete}
             navProps={navProps}
+            autoSave={autoSave}
           />
         )}
-        {currentStep === 4 && showMedicalStep && (
-          <Step4MedicalCapacity
+        {currentStep === 3 && showMedicalStep && (
+          <Step3MedicalCapacity
             defaultValues={referralData}
             onComplete={handleStepComplete}
             navProps={navProps}
+            autoSave={autoSave}
+          />
+        )}
+        {currentStep === 4 && (
+          <Step4Financial
+            defaultValues={referralData}
+            referralType={referralType}
+            referralId={savedReferralId}
+            onComplete={handleStepComplete}
+            navProps={navProps}
+            autoSave={autoSave}
           />
         )}
         {currentStep === 5 && (
-          <Step5Financial
+          <Step6Medicaid
             defaultValues={referralData}
-            referralType={referralType}
-            referralId={savedReferralId}
             onComplete={handleStepComplete}
             navProps={navProps}
+            autoSave={autoSave}
           />
         )}
         {currentStep === 6 && (
-          <Step6Family
+          <Step5DocumentsNotes
             defaultValues={referralData}
             referralId={savedReferralId}
             onComplete={handleStepComplete}
             navProps={navProps}
+            autoSave={autoSave}
           />
         )}
         {currentStep === 7 && (
-          <Step7LegalDocuments
-            defaultValues={referralData}
-            referralType={referralType}
-            onComplete={handleStepComplete}
-            navProps={navProps}
-          />
-        )}
-        {currentStep === 8 && (
-          <Step8DocumentsNotes
-            defaultValues={referralData}
-            referralId={savedReferralId}
-            onComplete={handleStepComplete}
-            navProps={navProps}
-          />
-        )}
-        {currentStep === 9 && (
-          <Step9ReviewSubmit
+          <Step7ReviewSubmit
             referralData={referralData}
             referralId={savedReferralId}
             activeSteps={activeSteps}
@@ -387,4 +440,3 @@ export function ReferralForm({ referralId, initialData, userId }: ReferralFormPr
     </div>
   );
 }
-

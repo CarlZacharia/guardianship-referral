@@ -146,9 +146,8 @@ export function ReferralReadOnly({ referral, isStaffView }: ReferralReadOnlyProp
         <CardHeader><CardTitle className="text-base">Financial</CardTitle></CardHeader>
         <CardContent className="space-y-6">
           <Section title="Income & Benefits" icon={DollarSign}>
-            <Field label="Monthly Income" value={referral.monthly_income
+            <Field label="Gross Monthly Income" value={referral.monthly_income
               ? `$${referral.monthly_income.toLocaleString()}` : undefined} />
-            <Field label="Income Sources" value={referral.income_sources} />
             <Field label="Medical Insurance" value={referral.medical_insurance_cost
               ? `$${referral.medical_insurance_cost.toLocaleString()}/mo` : undefined} />
             <Field label="Medicaid Status" value={referral.medicaid_status} />

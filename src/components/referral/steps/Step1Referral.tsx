@@ -1,12 +1,15 @@
 'use client';
 
-// src/components/referral/steps/Step3ClientIdentity.tsx
+// src/components/referral/steps/Step1Referral.tsx
+// Combined step: Referral Source + Case Type + Client Identity + Marital Status
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { step3Schema, Step3FormData } from '@/lib/validations/referral.schema';
-import { Referral, ReferralType, FLORIDA_COUNTIES } from '@/lib/types/referral.types';
+import { step1Schema, Step1FormData } from '@/lib/validations/referral.schema';
+import { Referral, Facility, FLORIDA_COUNTIES, AutoSaveProps } from '@/lib/types/referral.types';
+import { useAutoSave } from '@/hooks/use-auto-save';
+import { createClient } from '@/lib/supabase/client';
 import { StepNavigation, StepNavProps } from '../StepNavigation';
 import {
   Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription
@@ -19,13 +22,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Separator } from '@/components/ui/separator';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
-import { UserCircle, MapPin, Building2, DollarSign } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Building2, UserCircle, MapPin, DollarSign, Heart } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
-interface Step3Props {
+interface Step1Props {
   defaultValues: Partial<Referral>;
-  referralType?: ReferralType;
-  onComplete: (data: Partial<Referral>) => Promise<void>;
+  onComplete: (data: Partial<Referral>, advance?: boolean) => Promise<void>;
   navProps: StepNavProps;
+  autoSave: AutoSaveProps;
 }
 
 function SectionHeader({ icon: Icon, title }: { icon: React.ComponentType<{className?: string}>; title: string }) {
@@ -38,7 +43,6 @@ function SectionHeader({ icon: Icon, title }: { icon: React.ComponentType<{class
   );
 }
 
-// Auto-calculate age from DOB
 function calculateAge(dob: string): number | undefined {
   if (!dob) return undefined;
   const birthDate = new Date(dob);
@@ -49,10 +53,19 @@ function calculateAge(dob: string): number | undefined {
   return age >= 0 ? age : undefined;
 }
 
-export function Step3ClientIdentity({ defaultValues, referralType, onComplete, navProps }: Step3Props) {
-  const form = useForm<Step3FormData>({
-    resolver: zodResolver(step3Schema),
+export function Step1Referral({ defaultValues, onComplete, navProps, autoSave }: Step1Props) {
+  const supabase = createClient();
+  const [facilities, setFacilities] = useState<Facility[]>([]);
+  const [loadingFacilities, setLoadingFacilities] = useState(true);
+  const [showFreetext, setShowFreetext] = useState(!defaultValues.facility_id);
+
+  const form = useForm<Step1FormData>({
+    resolver: zodResolver(step1Schema),
     defaultValues: {
+      facility_id: defaultValues.facility_id || '',
+      facility_name_freetext: defaultValues.facility_name_freetext || '',
+      urgency: defaultValues.urgency || 'routine',
+      referral_type: defaultValues.referral_type || undefined,
       client_first_name: defaultValues.client_first_name || '',
       client_last_name: defaultValues.client_last_name || '',
       client_full_legal_name: defaultValues.client_full_legal_name || '',
@@ -74,30 +87,64 @@ export function Step3ClientIdentity({ defaultValues, referralType, onComplete, n
       admission_date: defaultValues.admission_date || '',
       amount_owed_facility: defaultValues.amount_owed_facility || undefined,
       facility_monthly_cost: defaultValues.facility_monthly_cost || undefined,
+      is_married: defaultValues.is_married || false,
+      spouse_name: defaultValues.spouse_name || '',
+      spouse_dob: defaultValues.spouse_dob || '',
+      spouse_ssn_last4: defaultValues.spouse_ssn_last4 || '',
+      spouse_email: defaultValues.spouse_email || '',
+      spouse_address: defaultValues.spouse_address || '',
+      spouse_phone: defaultValues.spouse_phone || '',
     },
   });
 
+  const { saveStatus, flushSave } = useAutoSave({
+    form,
+    stepNumber: autoSave.stepNumber,
+    saveStepData: autoSave.save,
+  });
+
+  useEffect(() => {
+    autoSave.registerFlush(flushSave);
+    return () => autoSave.registerFlush(null);
+  }, [autoSave, flushSave]);
+
+  useEffect(() => {
+    async function loadFacilities() {
+      const { data } = await supabase
+        .from('facilities')
+        .select('id, name, city, phone')
+        .eq('is_active', true)
+        .order('name');
+      setFacilities(data || []);
+      setLoadingFacilities(false);
+    }
+    loadFacilities();
+  }, [supabase]);
+
   const dobValue = form.watch('client_dob');
   const calculatedAge = calculateAge(dobValue);
+  const isMarried = form.watch('is_married');
 
   const handleNext = form.handleSubmit(async (data) => {
     await onComplete({
       ...data,
+      facility_id: data.facility_id || undefined,
+      facility_name_freetext: data.facility_name_freetext || undefined,
       client_age: calculateAge(data.client_dob),
       client_full_legal_name: data.client_full_legal_name ||
         `${data.client_first_name} ${data.client_last_name}`.trim(),
-    });
+    } as Partial<Referral>);
   });
 
   return (
     <Card>
       <CardHeader>
         <div className="flex items-center gap-2">
-          <UserCircle className="w-5 h-5 text-primary" />
-          <CardTitle>Client Information</CardTitle>
+          <Building2 className="w-5 h-5 text-primary" />
+          <CardTitle>Referral</CardTitle>
         </div>
         <CardDescription>
-          Basic identity and contact information for the individual being referred.
+          Referral source, case type, and client information.
         </CardDescription>
       </CardHeader>
 
@@ -105,8 +152,150 @@ export function Step3ClientIdentity({ defaultValues, referralType, onComplete, n
         <Form {...form}>
           <div className="space-y-6">
 
-            {/* Personal Identity */}
-            <SectionHeader icon={UserCircle} title="Identity" />
+            {/* ── Referral Source ── */}
+            <SectionHeader icon={Building2} title="Referral Source" />
+
+            <div className="space-y-3">
+              <Label className="text-sm font-medium">Referring Facility</Label>
+              <div className="flex gap-2 text-sm">
+                <button
+                  type="button"
+                  onClick={() => setShowFreetext(false)}
+                  className={cn(
+                    'px-3 py-1 rounded-full border transition-colors',
+                    !showFreetext
+                      ? 'bg-primary text-primary-foreground border-primary'
+                      : 'border-input text-muted-foreground hover:border-primary'
+                  )}
+                >
+                  Select from list
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowFreetext(true)}
+                  className={cn(
+                    'px-3 py-1 rounded-full border transition-colors',
+                    showFreetext
+                      ? 'bg-primary text-primary-foreground border-primary'
+                      : 'border-input text-muted-foreground hover:border-primary'
+                  )}
+                >
+                  Not in list — enter manually
+                </button>
+              </div>
+
+              {!showFreetext ? (
+                <FormField
+                  control={form.control}
+                  name="facility_id"
+                  render={({ field }) => (
+                    <FormItem>
+                      <Select onValueChange={field.onChange} defaultValue={field.value} disabled={loadingFacilities}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder={loadingFacilities ? 'Loading facilities...' : 'Select facility...'} />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {facilities.map(f => (
+                            <SelectItem key={f.id} value={f.id}>
+                              <div>
+                                <div className="font-medium">{f.name}</div>
+                                {f.city && <div className="text-xs text-muted-foreground">{f.city}</div>}
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              ) : (
+                <FormField
+                  control={form.control}
+                  name="facility_name_freetext"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormControl>
+                        <Input placeholder="Enter facility name" {...field} />
+                      </FormControl>
+                      <FormDescription>
+                        If this facility refers future cases, staff can add them to the master list.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+            </div>
+
+            {/* Urgency */}
+            <FormField
+              control={form.control}
+              name="urgency"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Urgency Level</FormLabel>
+                  <FormControl>
+                    <RadioGroup
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                      className="flex gap-4 mt-1"
+                    >
+                      <div className="flex items-center gap-2">
+                        <RadioGroupItem value="routine" id="urgency-routine" />
+                        <Label htmlFor="urgency-routine" className="cursor-pointer font-normal">Routine</Label>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <RadioGroupItem value="urgent" id="urgency-urgent" />
+                        <Label htmlFor="urgency-urgent" className="cursor-pointer font-normal">Urgent</Label>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <RadioGroupItem value="emergency" id="urgency-emergency" />
+                        <Label htmlFor="urgency-emergency" className="cursor-pointer font-normal">Emergency</Label>
+                      </div>
+                    </RadioGroup>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Case Type */}
+            <FormField
+              control={form.control}
+              name="referral_type"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Case Type</FormLabel>
+                  <FormControl>
+                    <RadioGroup
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                      className="flex gap-4 mt-1"
+                    >
+                      <div className="flex items-center gap-2">
+                        <RadioGroupItem value="guardianship" id="type-guardianship" />
+                        <Label htmlFor="type-guardianship" className="cursor-pointer font-normal">Guardianship</Label>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <RadioGroupItem value="medicaid" id="type-medicaid" />
+                        <Label htmlFor="type-medicaid" className="cursor-pointer font-normal">Medicaid</Label>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <RadioGroupItem value="both" id="type-both" />
+                        <Label htmlFor="type-both" className="cursor-pointer font-normal">Both</Label>
+                      </div>
+                    </RadioGroup>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* ── Client Identity ── */}
+            <SectionHeader icon={UserCircle} title="Client Information" />
 
             <div className="grid grid-cols-2 gap-4">
               <FormField control={form.control} name="client_first_name"
@@ -142,14 +331,14 @@ export function Step3ClientIdentity({ defaultValues, referralType, onComplete, n
             <div className="grid grid-cols-3 gap-4">
               <FormField control={form.control} name="client_dob"
                 render={({ field }) => (
-                  <FormItem className="col-span-1">
+                  <FormItem>
                     <FormLabel>Date of Birth <span className="text-destructive">*</span></FormLabel>
                     <FormControl><Input type="date" {...field} /></FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              <FormItem className="col-span-1">
+              <FormItem>
                 <FormLabel>Age</FormLabel>
                 <Input
                   value={calculatedAge !== undefined ? `${calculatedAge} years` : ''}
@@ -164,9 +353,7 @@ export function Step3ClientIdentity({ defaultValues, referralType, onComplete, n
                     <FormLabel>Sex</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select..." />
-                        </SelectTrigger>
+                        <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
                       </FormControl>
                       <SelectContent>
                         <SelectItem value="male">Male</SelectItem>
@@ -186,13 +373,7 @@ export function Step3ClientIdentity({ defaultValues, referralType, onComplete, n
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>SSN (Last 4)</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="XXXX"
-                        maxLength={4}
-                        {...field}
-                      />
-                    </FormControl>
+                    <FormControl><Input placeholder="XXXX" maxLength={4} {...field} /></FormControl>
                     <FormDescription className="text-xs">Last 4 digits only</FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -213,9 +394,7 @@ export function Step3ClientIdentity({ defaultValues, referralType, onComplete, n
                     <FormLabel>FL County</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select county..." />
-                        </SelectTrigger>
+                        <SelectTrigger><SelectValue placeholder="Select county..." /></SelectTrigger>
                       </FormControl>
                       <SelectContent>
                         {FLORIDA_COUNTIES.map(county => (
@@ -250,7 +429,92 @@ export function Step3ClientIdentity({ defaultValues, referralType, onComplete, n
               />
             </div>
 
-            {/* Home Address */}
+            {/* ── Marital Status (moved from Step 6) ── */}
+            <div className="flex items-center gap-2 pt-1">
+              <Heart className="w-4 h-4 text-primary" />
+              <h3 className="font-semibold text-sm uppercase tracking-wide text-muted-foreground">
+                Marital Status
+              </h3>
+              <Separator className="flex-1" />
+            </div>
+
+            <FormField
+              control={form.control}
+              name="is_married"
+              render={({ field }) => (
+                <FormItem>
+                  <div className={cn(
+                    'flex items-center justify-between p-3 rounded-lg border transition-colors',
+                    isMarried ? 'border-primary/30 bg-primary/5' : 'border-input'
+                  )}>
+                    <FormLabel className="cursor-pointer mb-0 font-medium">Currently Married</FormLabel>
+                    <FormControl>
+                      <Switch checked={!!field.value} onCheckedChange={field.onChange} />
+                    </FormControl>
+                  </div>
+                </FormItem>
+              )}
+            />
+
+            {isMarried && (
+              <div className="space-y-4 pl-4 border-l-2 border-primary/20">
+                <p className="text-sm text-muted-foreground font-medium">Spouse Information</p>
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField control={form.control} name="spouse_name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Spouse Full Name</FormLabel>
+                        <FormControl><Input {...field} /></FormControl>
+                      </FormItem>
+                    )}
+                  />
+                  <FormField control={form.control} name="spouse_dob"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Spouse Date of Birth</FormLabel>
+                        <FormControl><Input type="date" {...field} /></FormControl>
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                <div className="grid grid-cols-3 gap-4">
+                  <FormField control={form.control} name="spouse_ssn_last4"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>SSN (Last 4)</FormLabel>
+                        <FormControl><Input maxLength={4} placeholder="XXXX" {...field} /></FormControl>
+                      </FormItem>
+                    )}
+                  />
+                  <FormField control={form.control} name="spouse_phone"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Spouse Phone</FormLabel>
+                        <FormControl><Input type="tel" {...field} /></FormControl>
+                      </FormItem>
+                    )}
+                  />
+                  <FormField control={form.control} name="spouse_email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Spouse Email</FormLabel>
+                        <FormControl><Input type="email" placeholder="email@example.com" {...field} /></FormControl>
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                <FormField control={form.control} name="spouse_address"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Spouse Address</FormLabel>
+                      <FormControl><Input placeholder="If different from client" {...field} /></FormControl>
+                    </FormItem>
+                  )}
+                />
+              </div>
+            )}
+
+            {/* ── Addresses ── */}
             <SectionHeader icon={MapPin} title="Home Address (Pre-Admission)" />
 
             <FormField control={form.control} name="client_home_address"
@@ -292,7 +556,6 @@ export function Step3ClientIdentity({ defaultValues, referralType, onComplete, n
               />
             </div>
 
-            {/* Current / Facility Address */}
             <SectionHeader icon={Building2} title="Current Address (if different)" />
 
             <FormField control={form.control} name="client_current_address"
@@ -334,7 +597,7 @@ export function Step3ClientIdentity({ defaultValues, referralType, onComplete, n
               />
             </div>
 
-            {/* Facility Financials */}
+            {/* ── Facility Account ── */}
             <SectionHeader icon={DollarSign} title="Facility Account" />
 
             <div className="grid grid-cols-3 gap-4">
@@ -353,15 +616,10 @@ export function Step3ClientIdentity({ defaultValues, referralType, onComplete, n
                     <FormLabel>Amount Owed</FormLabel>
                     <FormControl>
                       <Input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        placeholder="0.00"
+                        type="number" min="0" step="0.01" placeholder="0.00"
                         value={field.value ?? ''}
                         onChange={e => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
-                        onBlur={field.onBlur}
-                        name={field.name}
-                        ref={field.ref}
+                        onBlur={field.onBlur} name={field.name} ref={field.ref}
                       />
                     </FormControl>
                     <FormMessage />
@@ -374,15 +632,10 @@ export function Step3ClientIdentity({ defaultValues, referralType, onComplete, n
                     <FormLabel>Monthly Cost</FormLabel>
                     <FormControl>
                       <Input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        placeholder="0.00"
+                        type="number" min="0" step="0.01" placeholder="0.00"
                         value={field.value ?? ''}
                         onChange={e => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
-                        onBlur={field.onBlur}
-                        name={field.name}
-                        ref={field.ref}
+                        onBlur={field.onBlur} name={field.name} ref={field.ref}
                       />
                     </FormControl>
                     <FormMessage />
@@ -398,9 +651,9 @@ export function Step3ClientIdentity({ defaultValues, referralType, onComplete, n
       <StepNavigation
         {...navProps}
         onNext={handleNext}
-        currentStepData={form.getValues()}
+        currentStepData={form.getValues() as unknown as Partial<Referral>}
+        saveStatus={saveStatus}
       />
     </Card>
   );
 }
-

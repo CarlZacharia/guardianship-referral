@@ -121,7 +121,7 @@ export function ReferralList({
                   </div>
                   {isDraft && referral.current_step && (
                     <div className="text-xs text-amber-600 mt-1">
-                      Draft · Step {referral.current_step} of 9
+                      Draft · Step {referral.current_step} of 7
                     </div>
                   )}
                   <div className="text-xs text-muted-foreground mt-1">

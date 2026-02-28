@@ -1,11 +1,11 @@
 'use client'
 
-// src/components/referral/steps/Step9ReviewSubmit.tsx
+// src/components/referral/steps/Step7ReviewSubmit.tsx
 
 import { useState } from 'react'
 import {
   Referral, REFERRAL_TYPE_LABELS, CAPACITY_LABELS,
-  URGENCY_LABELS, ASSET_TYPE_LABELS
+  URGENCY_LABELS, ASSET_TYPE_LABELS, INCOME_LIMIT, P_AND_A
 } from '@/lib/types/referral.types'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -18,7 +18,7 @@ import { Badge } from '@/components/ui/badge'
 import { format } from 'date-fns'
 import { Edit, Loader2, ClipboardCheck, AlertCircle } from 'lucide-react'
 
-interface Step9Props {
+interface Step7Props {
   referralData: Partial<Referral>
   referralId?: string
   activeSteps: { number: number; label: string }[]
@@ -62,20 +62,20 @@ function ReviewRow({ label, value }: { label: string; value?: string | number | 
   const display = typeof value === 'boolean' ? (value ? 'Yes' : 'No') : String(value)
   return (
     <div className="flex gap-3 text-sm">
-      <span className="text-muted-foreground w-40 flex-shrink-0">{label}</span>
+      <span className="text-muted-foreground w-40 shrink-0">{label}</span>
       <span className="font-medium flex-1">{display}</span>
     </div>
   )
 }
 
-export function Step9ReviewSubmit({
+export function Step7ReviewSubmit({
   referralData,
   referralId,
   activeSteps,
   onSubmit,
   onEditStep,
   isSaving,
-}: Step9Props) {
+}: Step7Props) {
   const [certify, setCertify] = useState(false)
   const [submitterName, setSubmitterName] = useState(referralData.submitted_by_name || '')
   const [submitterCompany, setSubmitterCompany] = useState(referralData.submitted_by_company || '')
@@ -112,8 +112,8 @@ export function Step9ReviewSubmit({
         </CardHeader>
       </Card>
 
-      {/* Summary */}
-      <ReviewSection title="Referral Type & Urgency" stepNumber={1} onEdit={onEditStep}>
+      {/* Step 1: Referral */}
+      <ReviewSection title="Referral" stepNumber={1} onEdit={onEditStep}>
         <ReviewRow
           label="Facility"
           value={referralData.facility_name_freetext || (referralData as any).facilities?.name}
@@ -126,9 +126,6 @@ export function Step9ReviewSubmit({
           label="Case Type"
           value={referralData.referral_type ? REFERRAL_TYPE_LABELS[referralData.referral_type] : undefined}
         />
-      </ReviewSection>
-
-      <ReviewSection title="Client Information" stepNumber={3} onEdit={onEditStep}>
         <ReviewRow
           label="Name"
           value={referralData.client_full_legal_name ||
@@ -144,6 +141,10 @@ export function Step9ReviewSubmit({
         <ReviewRow label="Sex" value={referralData.client_sex} />
         <ReviewRow label="County" value={referralData.client_county} />
         <ReviewRow label="Phone" value={referralData.client_phone} />
+        <ReviewRow label="Married" value={referralData.is_married} />
+        {referralData.is_married && (
+          <ReviewRow label="Spouse" value={referralData.spouse_name} />
+        )}
         <ReviewRow
           label="Admission Date"
           value={referralData.admission_date
@@ -157,28 +158,59 @@ export function Step9ReviewSubmit({
         />
       </ReviewSection>
 
-      {referralData.capacity_level && (
-        <ReviewSection title="Medical & Capacity" stepNumber={4} onEdit={onEditStep}>
+      {/* Step 2: Family - Contacts - Agents */}
+      <ReviewSection title="Family - Contacts - Agents" stepNumber={2} onEdit={onEditStep}>
+        {(referralData as any).family_members?.length > 0 && (
           <ReviewRow
-            label="Capacity"
-            value={CAPACITY_LABELS[referralData.capacity_level]}
+            label="Family Members"
+            value={`${(referralData as any).family_members.length} added`}
           />
+        )}
+        <ReviewRow label="Power of Attorney" value={referralData.has_poa} />
+        <ReviewRow label="Health Care Surrogate" value={referralData.has_hc_surrogate} />
+        <ReviewRow label="Living Will" value={referralData.has_living_will} />
+        <ReviewRow label="Trust" value={referralData.has_trust} />
+        <ReviewRow label="Prior Guardianship" value={referralData.has_prior_guardianship} />
+      </ReviewSection>
+
+      {/* Step 3: Medical & Capacity */}
+      {referralData.capacity_level && (
+        <ReviewSection title="Medical & Capacity" stepNumber={3} onEdit={onEditStep}>
+          <ReviewRow label="Capacity" value={CAPACITY_LABELS[referralData.capacity_level]} />
           <ReviewRow label="BIMS Score" value={referralData.bims_score} />
           <ReviewRow label="DNR" value={referralData.dnr} />
           <ReviewRow label="Physician" value={referralData.physician_name} />
         </ReviewSection>
       )}
 
-      <ReviewSection title="Financial" stepNumber={5} onEdit={onEditStep}>
+      {/* Step 4: Financial */}
+      <ReviewSection title="Financial" stepNumber={4} onEdit={onEditStep}>
         <ReviewRow
-          label="Monthly Income"
+          label="Gross Monthly Income"
           value={referralData.monthly_income
             ? `$${referralData.monthly_income.toLocaleString()}` : undefined}
+        />
+        <ReviewRow
+          label="Medical Insurance"
+          value={referralData.medical_insurance_cost
+            ? `$${referralData.medical_insurance_cost.toLocaleString()}` : undefined}
+        />
+        {(referralData.monthly_income || referralData.medical_insurance_cost) && (
+          <ReviewRow
+            label="Private Pay"
+            value={`$${((referralData.monthly_income || 0) - (referralData.medical_insurance_cost || 0) - P_AND_A).toLocaleString()}`}
+          />
+        )}
+        <ReviewRow
+          label={`Income Limit (${INCOME_LIMIT.year})`}
+          value={`$${INCOME_LIMIT.income_limit.toLocaleString()}`}
         />
         <ReviewRow label="Medicaid Status" value={referralData.medicaid_status} />
         <ReviewRow label="Rep Payee" value={referralData.rep_payee_status} />
         <ReviewRow label="VA Benefits" value={referralData.va_benefits} />
-        {(referralData as any).assets?.length > 0 && (
+        {referralData.assets_unknown ? (
+          <ReviewRow label="Assets" value="Unknown at this time" />
+        ) : (referralData as any).assets?.length > 0 ? (
           <div className="text-sm">
             <span className="text-muted-foreground">Assets: </span>
             <span className="font-medium">
@@ -188,28 +220,35 @@ export function Step9ReviewSubmit({
                 .toLocaleString()}
             </span>
           </div>
-        )}
+        ) : null}
       </ReviewSection>
 
-      <ReviewSection title="Family & Next of Kin" stepNumber={6} onEdit={onEditStep}>
-        <ReviewRow label="Married" value={referralData.is_married} />
-        {referralData.is_married && (
-          <ReviewRow label="Spouse" value={referralData.spouse_name} />
-        )}
-        {(referralData as any).family_members?.length > 0 && (
-          <ReviewRow
-            label="Family Members"
-            value={`${(referralData as any).family_members.length} added`}
-          />
-        )}
+      {/* Step 5: Medicaid */}
+      <ReviewSection title="Medicaid" stepNumber={5} onEdit={onEditStep}>
+        <ReviewRow
+          label="Application Type"
+          value={referralData.medicaid_application_type === 'new' ? 'New Application'
+            : referralData.medicaid_application_type === 'renewal' ? 'Renewal'
+            : undefined}
+        />
+        <ReviewRow label="Date of Need" value={referralData.medicaid_date_of_need} />
+        <ReviewRow label="Application Date" value={referralData.medicaid_application_date} />
+        <ReviewRow label="Application Number" value={referralData.medicaid_application_number} />
+        <ReviewRow label="Case Number" value={referralData.medicaid_case_number} />
+        <ReviewRow label="Current Status" value={referralData.medicaid_current_status} />
+        <ReviewRow label="Filed By" value={referralData.medicaid_filed_by} />
+        <ReviewRow label="Contact Name" value={referralData.medicaid_contact_name} />
+        <ReviewRow label="Contact Address" value={referralData.medicaid_contact_address} />
+        <ReviewRow label="Contact Phone" value={referralData.medicaid_contact_phone} />
+        <ReviewRow label="Contact Email" value={referralData.medicaid_contact_email} />
+        <ReviewRow label="MyACCESS Login" value={referralData.medicaid_myaccess_login} />
+        <ReviewRow label="Documents Uploaded" value={referralData.medicaid_documents_uploaded} />
+        <ReviewRow label="Comments" value={referralData.medicaid_comments} />
       </ReviewSection>
 
-      <ReviewSection title="Legal Documents" stepNumber={7} onEdit={onEditStep}>
-        <ReviewRow label="Power of Attorney" value={referralData.has_poa} />
-        <ReviewRow label="Health Care Surrogate" value={referralData.has_hc_surrogate} />
-        <ReviewRow label="Living Will" value={referralData.has_living_will} />
-        <ReviewRow label="Trust" value={referralData.has_trust} />
-        <ReviewRow label="Prior Guardianship" value={referralData.has_prior_guardianship} />
+      {/* Step 6: Documents & Uploads */}
+      <ReviewSection title="Documents & Uploads" stepNumber={6} onEdit={onEditStep}>
+        <ReviewRow label="Notes" value={referralData.notes} />
       </ReviewSection>
 
       {/* Signature & Certification */}
@@ -287,4 +326,3 @@ export function Step9ReviewSubmit({
     </div>
   )
 }
-
