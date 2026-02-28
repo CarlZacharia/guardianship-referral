@@ -29,6 +29,7 @@ export type DocumentType =
   | 'medical_report' | 'poa' | 'hc_surrogate' | 'living_will'
   | 'trust' | 'outstanding_balance' | 'bank_statement'
   | 'resident_funds' | 'incapacity_determination' | 'level_of_care'
+  | 'financial_disclosure' | 'designation_of_rep' | 'authorization_to_disclose'
   | 'other';
 
 // ============================================================
@@ -476,7 +477,7 @@ export const INCOME_LIMIT = {
   income_limit: 2982,
 };
 
-export const P_AND_A = 162;
+export const PNA = 160;
 
 export interface IncomeEntry {
   description: string;

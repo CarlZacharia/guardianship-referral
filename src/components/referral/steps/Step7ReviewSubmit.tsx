@@ -5,7 +5,7 @@
 import { useState } from 'react'
 import {
   Referral, REFERRAL_TYPE_LABELS, CAPACITY_LABELS,
-  URGENCY_LABELS, ASSET_TYPE_LABELS, INCOME_LIMIT, P_AND_A
+  URGENCY_LABELS, ASSET_TYPE_LABELS, INCOME_LIMIT, PNA
 } from '@/lib/types/referral.types'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -16,7 +16,7 @@ import { Separator } from '@/components/ui/separator'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Badge } from '@/components/ui/badge'
 import { format } from 'date-fns'
-import { Edit, Loader2, ClipboardCheck, AlertCircle } from 'lucide-react'
+import { Edit, Loader2, ClipboardCheck, AlertCircle, AlertTriangle, ListChecks } from 'lucide-react'
 
 interface Step7Props {
   referralData: Partial<Referral>
@@ -81,6 +81,149 @@ export function Step7ReviewSubmit({
   const [submitterCompany, setSubmitterCompany] = useState(referralData.submitted_by_company || '')
   const [error, setError] = useState('')
 
+  // --- Warnings array ---
+  const warnings: { key: string; message: string }[] = []
+
+  // Agent: no decision maker
+  const noCapacity = referralData.capacity_level === 'no_capacity'
+  const noPOA = !referralData.has_poa
+  const noGuardian = !referralData.has_prior_guardianship
+  if (noCapacity && noPOA && noGuardian) {
+    warnings.push({
+      key: 'agent',
+      message: 'There is currently not a decision maker with the ability and authority to sign the DCF documents and to obtain the documentation required by DCF.',
+    })
+  }
+
+  // QIT: income over limit without a QIT
+  const incomeOverLimit = (referralData.monthly_income || 0) > INCOME_LIMIT.income_limit
+  const noQIT = !(referralData as any).has_qit
+  if (incomeOverLimit && noQIT) {
+    warnings.push({
+      key: 'qit',
+      message: "The applicant's income is over the income limit. A qualified income trust is mandatory and must be obtained soon.",
+    })
+  }
+
+  // --- Next Steps array ---
+  const nextSteps: { key: string; message: React.ReactNode }[] = []
+
+  // Uploaded document types
+  const uploadedDocTypes = new Set(
+    (referralData.documents || []).map(d => d.doc_type)
+  )
+  const hasPOAUploaded = uploadedDocTypes.has('poa')
+  const hasFinReleaseUploaded = uploadedDocTypes.has('financial_disclosure')
+  const hasDesigRepUploaded = uploadedDocTypes.has('designation_of_rep')
+  const hasCapacity = referralData.capacity_level === 'has_capacity'
+  const hasPOA = !!referralData.has_poa
+
+  if (noCapacity && noPOA && noGuardian) {
+    nextSteps.push({
+      key: 'agent',
+      message: 'There is no one with authority to obtain the documentation and sign documents required by DCF. A guardian must be sought immediately.',
+    })
+  }
+
+  if (incomeOverLimit && noQIT) {
+    nextSteps.push({
+      key: 'qit',
+      message: (
+        <span>
+          Obtain a QIT immediately.{' '}
+          <a href="#" className="text-primary underline font-medium">Click this link to obtain one now.</a>
+        </span>
+      ),
+    })
+  }
+
+  // POA exists but not uploaded
+  if (hasPOA && !hasPOAUploaded) {
+    nextSteps.push({
+      key: 'poa-upload',
+      message: 'Please upload a copy of the Executed Power of Attorney immediately for review.',
+    })
+  }
+
+  // Financial release not uploaded + applicant has capacity
+  if (!hasFinReleaseUploaded && hasCapacity) {
+    nextSteps.push({
+      key: 'fin-release-capacity',
+      message: (
+        <span>
+          Have the applicant sign this financial release and upload it to us immediately.{' '}
+          Click <a href="/finrelease.pdf" target="_blank" rel="noopener noreferrer" className="text-primary underline font-medium">here</a> to upload.
+        </span>
+      ),
+    })
+  }
+
+  // Financial release not uploaded + has POA
+  if (!hasFinReleaseUploaded && hasPOA) {
+    nextSteps.push({
+      key: 'fin-release-poa',
+      message: (
+        <span>
+          Have the power of attorney agent sign this financial release and upload it to us immediately.{' '}
+          Click <a href="/finrelease.pdf" target="_blank" rel="noopener noreferrer" className="text-primary underline font-medium">here</a> to upload.
+        </span>
+      ),
+    })
+  }
+
+  // Designation of representative not uploaded + applicant has capacity
+  if (!hasDesigRepUploaded && hasCapacity) {
+    nextSteps.push({
+      key: 'desig-rep-capacity',
+      message: (
+        <span>
+          Have the applicant sign this designation of representative form and upload it to us immediately.{' '}
+          Click <a href="/desigrep.pdf" target="_blank" rel="noopener noreferrer" className="text-primary underline font-medium">here</a> to upload.
+        </span>
+      ),
+    })
+  }
+
+  // Designation of representative not uploaded + has POA
+  if (!hasDesigRepUploaded && hasPOA) {
+    nextSteps.push({
+      key: 'desig-rep-poa',
+      message: (
+        <span>
+          Have the financial power of attorney agent sign this designation of representative form and upload it to us immediately.{' '}
+          Click <a href="/desigrep.pdf" target="_blank" rel="noopener noreferrer" className="text-primary underline font-medium">here</a> to upload.
+        </span>
+      ),
+    })
+  }
+
+  // Authorization to disclose not uploaded + applicant has capacity
+  const hasAuthDiscloseUploaded = uploadedDocTypes.has('authorization_to_disclose')
+  if (!hasAuthDiscloseUploaded && hasCapacity) {
+    nextSteps.push({
+      key: 'auth-disclose-capacity',
+      message: (
+        <span>
+          Have the applicant sign this authorization to disclose information and upload it to us immediately.{' '}
+          Click <a href="/authdisclose.pdf" target="_blank" rel="noopener noreferrer" className="text-primary underline font-medium">here</a> to upload.
+        </span>
+      ),
+    })
+  }
+
+  // Authorization to disclose not uploaded + has POA
+  if (!hasAuthDiscloseUploaded && hasPOA) {
+    nextSteps.push({
+      key: 'auth-disclose-poa',
+      message: (
+        <span>
+          Have the power of attorney agent sign this authorization to disclose information and upload it to us immediately.{' '}
+          Click <a href="/authdisclose.pdf" target="_blank" rel="noopener noreferrer" className="text-primary underline font-medium">here</a> to upload.
+        </span>
+      ),
+    })
+  }
+
   const handleSubmit = async () => {
     if (!certify) {
       setError('Please certify that the information is accurate before submitting.')
@@ -111,6 +254,50 @@ export function Step7ReviewSubmit({
           </CardDescription>
         </CardHeader>
       </Card>
+
+      {/* Warnings and Issues */}
+      <div className="rounded-lg border-2 border-red-500 overflow-hidden">
+        <div className="flex items-center gap-2 px-4 py-3 bg-red-50 border-b border-red-200">
+          <AlertTriangle className="w-4 h-4 text-red-600" />
+          <h3 className="font-semibold text-sm text-red-700">Warnings and Issues</h3>
+        </div>
+        <div className="p-4 text-sm">
+          {warnings.length === 0 ? (
+            <span className="text-muted-foreground">No warnings or issues at this time.</span>
+          ) : (
+            <ul className="space-y-2">
+              {warnings.map(w => (
+                <li key={w.key} className="flex gap-2 text-red-700">
+                  <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+                  <span>{w.message}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </div>
+
+      {/* Next Steps Required */}
+      <div className="rounded-lg border-2 border-blue-800 overflow-hidden">
+        <div className="flex items-center gap-2 px-4 py-3 bg-blue-50 border-b border-blue-200">
+          <ListChecks className="w-4 h-4 text-blue-800" />
+          <h3 className="font-semibold text-sm text-blue-800">Next Steps Required</h3>
+        </div>
+        <div className="p-4 text-sm">
+          {nextSteps.length === 0 ? (
+            <span className="text-muted-foreground">No next steps required at this time.</span>
+          ) : (
+            <ul className="space-y-2">
+              {nextSteps.map(ns => (
+                <li key={ns.key} className="flex gap-2 text-blue-800">
+                  <ListChecks className="w-4 h-4 mt-0.5 shrink-0" />
+                  <span>{ns.message}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </div>
 
       {/* Step 1: Referral */}
       <ReviewSection title="Referral" stepNumber={1} onEdit={onEditStep}>
@@ -198,7 +385,7 @@ export function Step7ReviewSubmit({
         {(referralData.monthly_income || referralData.medical_insurance_cost) && (
           <ReviewRow
             label="Private Pay"
-            value={`$${((referralData.monthly_income || 0) - (referralData.medical_insurance_cost || 0) - P_AND_A).toLocaleString()}`}
+            value={`$${((referralData.monthly_income || 0) - (referralData.medical_insurance_cost || 0) - PNA).toLocaleString()}`}
           />
         )}
         <ReviewRow
@@ -316,8 +503,8 @@ export function Step7ReviewSubmit({
 
           <p className="text-xs text-center text-muted-foreground">
             Submitted referrals are routed to{' '}
-            <a href="mailto:intake@zachariafreylaw.com" className="text-primary">
-              intake@zachariafreylaw.com
+            <a href="mailto:intake@zacfreylaw.com" className="text-primary">
+              intake@zacfreylaw.com
             </a>
             . You will receive a confirmation and can track status in your dashboard.
           </p>

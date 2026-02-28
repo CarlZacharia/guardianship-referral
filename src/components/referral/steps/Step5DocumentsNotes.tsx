@@ -43,6 +43,9 @@ const DOC_TYPE_LABELS: Record<string, string> = {
   resident_funds: 'Current Resident Funds Statement',
   incapacity_determination: 'Incapacity Determination',
   level_of_care: 'Level of Care Assessment',
+  financial_disclosure: 'Financial Disclosure',
+  designation_of_rep: 'Designation of Representative',
+  authorization_to_disclose: 'Authorization to Disclose',
   other: 'Other Document',
 }
 
@@ -148,6 +151,9 @@ export function Step5DocumentsNotes({ defaultValues, referralId, onComplete, nav
     { type: 'medical_report', label: 'Medical Report / Physician Letter' },
     { type: 'poa', label: 'Power of Attorney (if exists)' },
     { type: 'bank_statement', label: 'Bank Statement(s)' },
+    { type: 'financial_disclosure', label: 'Financial Disclosure' },
+    { type: 'designation_of_rep', label: 'Designation of Representative' },
+    { type: 'authorization_to_disclose', label: 'Authorization to Disclose' },
   ]
 
   const uploadedTypes = new Set(uploads.map(u => u.doc_type))

@@ -6,7 +6,7 @@ import { useState, useEffect } from 'react'
 import { useForm, useFieldArray } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { step4Schema, Step4FormData } from '@/lib/validations/referral.schema'
-import { Referral, ReferralType, AssetType, ASSET_TYPE_LABELS, AutoSaveProps, P_AND_A } from '@/lib/types/referral.types'
+import { Referral, ReferralType, AssetType, ASSET_TYPE_LABELS, AutoSaveProps, PNA } from '@/lib/types/referral.types'
 import { useAutoSave } from '@/hooks/use-auto-save'
 import { StepNavigation, StepNavProps } from '../StepNavigation'
 import {
@@ -118,7 +118,7 @@ export function Step4Financial({ defaultValues, referralType, referralId, onComp
   const insuranceEntries = form.watch('medical_insurance_entries') || []
   const totalIncome = incomeEntries.reduce((s: number, e: any) => s + (e?.amount || 0), 0)
   const totalInsurance = insuranceEntries.reduce((s: number, e: any) => s + (e?.amount || 0), 0)
-  const privatePay = totalIncome - totalInsurance - P_AND_A
+  const privatePay = totalIncome - totalInsurance - PNA
 
   // Sync computed totals into form so they get saved
   useEffect(() => {
@@ -165,7 +165,7 @@ export function Step4Financial({ defaultValues, referralType, referralId, onComp
                     <FormField control={form.control} name={`income_entries.${i}.description`}
                       render={({ field: f }) => (
                         <FormControl>
-                          <Input placeholder="Source (e.g., Social Security)" className="h-8 text-sm" {...f} />
+                          <Input placeholder={['Source (e.g., Social Security)', 'Pension', 'Other'][i]} className="h-8 text-sm" {...f} />
                         </FormControl>
                       )}
                     />
@@ -195,7 +195,7 @@ export function Step4Financial({ defaultValues, referralType, referralId, onComp
                     <FormField control={form.control} name={`medical_insurance_entries.${i}.description`}
                       render={({ field: f }) => (
                         <FormControl>
-                          <Input placeholder="Plan (e.g., Medicare Part B)" className="h-8 text-sm" {...f} />
+                          <Input placeholder={['Part B', 'Medicare plan', 'Part D, vision, etc.'][i]} className="h-8 text-sm" {...f} />
                         </FormControl>
                       )}
                     />
@@ -226,12 +226,12 @@ export function Step4Financial({ defaultValues, referralType, referralId, onComp
                 <span>${totalIncome.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span>Minus Total Medical Insurance</span>
+                <span> - Total Medical Insurance</span>
                 <span>-${totalInsurance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span>Minus P&A</span>
-                <span>-${P_AND_A.toFixed(2)}</span>
+                <span> - PNA</span>
+                <span>-${PNA.toFixed(2)}</span>
               </div>
               <Separator />
               <div className="flex justify-between text-sm font-semibold">
@@ -322,7 +322,7 @@ export function Step4Financial({ defaultValues, referralType, referralId, onComp
                   <div className="flex items-center gap-2">
                     <DollarSign className="w-4 h-4 text-primary" />
                     <h3 className="font-semibold text-sm uppercase tracking-wide text-muted-foreground">Asset Inventory</h3>
-                    <Separator className="w-20" />
+                    <Separator className="flex-1" />
                   </div>
                   {!assetsUnknown && assetFields.length > 0 && (
                     <Badge variant="outline" className="text-sm">Total: ${totalAssets.toLocaleString()}</Badge>

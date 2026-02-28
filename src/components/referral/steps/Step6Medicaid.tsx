@@ -294,7 +294,7 @@ export function Step6Medicaid({ defaultValues, onComplete, navProps, autoSave }:
                   <FormItem>
                     <FormLabel>MyACCESS Password</FormLabel>
                     <FormControl>
-                      <Input type="password" placeholder="Password" {...field} />
+                      <Input type="text" placeholder="Password" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

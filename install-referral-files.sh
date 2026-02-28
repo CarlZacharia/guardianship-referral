@@ -365,8 +365,8 @@ export default function VerifyPage({
         </p>
         <p className="text-sm text-muted-foreground">
           If you don&apos;t see it, check your spam folder or contact{' '}
-          <a href="mailto:intake@zachariafreylaw.com" className="text-primary hover:underline">
-            intake@zachariafreylaw.com
+          <a href="mailto:intake@zacfreylaw.com.com" className="text-primary hover:underline">
+            intake@zacfreylaw.com.com
           </a>.
         </p>
         <Button variant="outline" asChild className="w-full">
@@ -5105,8 +5105,8 @@ export function Step9ReviewSubmit({
 
           <p className="text-xs text-center text-muted-foreground">
             Submitted referrals are routed to{' '}
-            <a href="mailto:intake@zachariafreylaw.com" className="text-primary">
-              intake@zachariafreylaw.com
+            <a href="mailto:intake@zacfreylaw.com.com" className="text-primary">
+              intake@zacfreylaw.com.com
             </a>
             . You will receive a confirmation and can track status in your dashboard.
           </p>
