@@ -537,85 +537,146 @@ async function sendEmail(
   return await response.json();
 }
 
+// ─── Save PDF to Storage ─────────────────────────────────────────────
+async function savePdfToStorage(
+  supabase: ReturnType<typeof createClient>,
+  referralId: string,
+  pdfBytes: Uint8Array,
+  fileName: string
+) {
+  const storagePath = `${referralId}/${fileName}`;
+  const { error } = await supabase.storage
+    .from("referral-reports")
+    .upload(storagePath, pdfBytes, {
+      contentType: "application/pdf",
+      upsert: true, // overwrite if re-submitted
+    });
+
+  if (error) {
+    console.error(`Failed to save PDF to storage: ${error.message}`);
+  } else {
+    console.log(`PDF saved to referral-reports/${storagePath}`);
+  }
+}
+
+// ─── Shared: fetch referral + profile, generate PDF ─────────────────
+async function fetchAndGeneratePdf(referralId: string) {
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+  const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const supabase = createClient(supabaseUrl, supabaseKey);
+
+  // Fetch full referral with joins
+  const { data: referral, error: fetchError } = await supabase
+    .from("referrals")
+    .select(`
+      *,
+      family_members(*),
+      assets(*),
+      referral_documents(*),
+      facilities(*)
+    `)
+    .eq("id", referralId)
+    .single();
+
+  if (fetchError || !referral) {
+    throw new Error(`Failed to fetch referral: ${fetchError?.message}`);
+  }
+
+  // Fetch referrer profile
+  let referrerProfile = null;
+  if (referral.referrer_id) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("email, first_name, last_name, organization")
+      .eq("id", referral.referrer_id)
+      .single();
+    referrerProfile = profile;
+  }
+
+  const clientName =
+    referral.client_full_legal_name ||
+    `${referral.client_first_name || ""} ${referral.client_last_name || ""}`.trim() ||
+    "Unknown";
+  const referralType = REFERRAL_TYPE_LABELS[referral.referral_type] || "Unknown";
+
+  const pdfBytes = await generatePdf(referral, referrerProfile);
+
+  return { pdfBytes, clientName, referralType, referrerProfile, referral, supabase };
+}
+
+// ─── CORS headers ────────────────────────────────────────────────────
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+};
+
 // ─── Main Handler ────────────────────────────────────────────────────
 Deno.serve(async (req) => {
+  // Handle CORS preflight
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: corsHeaders });
+  }
+
   try {
-    // Webhook payload from Supabase
     const payload = await req.json();
 
-    // The webhook sends the full row data; get the referral ID
-    const referralId = payload.record?.id;
-    const newStatus = payload.record?.status;
+    // Determine mode:
+    //   - Webhook (from DB trigger): has record.id + record.status
+    //   - Download (from client):    has referral_id, no record
+    const isDownloadMode = payload.referral_id && !payload.record;
 
-    // Only process when status becomes 'submitted'
-    if (!referralId || newStatus !== "submitted") {
-      return new Response(JSON.stringify({ message: "Skipped: not a submission" }), {
+    if (isDownloadMode) {
+      // ── Download mode: generate PDF, save to storage, and return it ──
+      const { pdfBytes, clientName, supabase } = await fetchAndGeneratePdf(payload.referral_id);
+      const fileName = `Referral-Report-${clientName.replace(/\s+/g, "-")}.pdf`;
+
+      // Save to storage (don't block the response)
+      savePdfToStorage(supabase, payload.referral_id, pdfBytes, fileName);
+
+      return new Response(pdfBytes, {
         status: 200,
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          ...corsHeaders,
+          "Content-Type": "application/pdf",
+          "Content-Disposition": `attachment; filename="${fileName}"`,
+        },
       });
     }
 
-    // Create Supabase admin client
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    // ── Webhook mode: generate PDF and email it ──
+    const referralId = payload.record?.id;
+    const newStatus = payload.record?.status;
 
-    // Fetch full referral with joins
-    const { data: referral, error: fetchError } = await supabase
-      .from("referrals")
-      .select(`
-        *,
-        family_members(*),
-        assets(*),
-        referral_documents(*),
-        facilities(*)
-      `)
-      .eq("id", referralId)
-      .single();
-
-    if (fetchError || !referral) {
-      throw new Error(`Failed to fetch referral: ${fetchError?.message}`);
+    if (!referralId || newStatus !== "submitted") {
+      return new Response(JSON.stringify({ message: "Skipped: not a submission" }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
-    // Fetch referrer profile
-    let referrerProfile = null;
-    if (referral.referrer_id) {
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("email, first_name, last_name, organization")
-        .eq("id", referral.referrer_id)
-        .single();
-      referrerProfile = profile;
-    }
+    const { pdfBytes, clientName, referralType, referrerProfile, supabase } =
+      await fetchAndGeneratePdf(referralId);
 
-    const clientName =
-      referral.client_full_legal_name ||
-      `${referral.client_first_name || ""} ${referral.client_last_name || ""}`.trim() ||
-      "Unknown";
-    const referralType = REFERRAL_TYPE_LABELS[referral.referral_type] || "Unknown";
+    const fileName = `Referral-Report-${clientName.replace(/\s+/g, "-")}.pdf`;
 
-    // Generate PDF
-    const pdfBytes = await generatePdf(referral, referrerProfile);
+    // Save PDF to storage and send email in parallel
+    await Promise.all([
+      savePdfToStorage(supabase, referralId, pdfBytes, fileName),
+      sendEmail(pdfBytes, clientName, referralType, referrerProfile?.email || ""),
+    ]);
 
-    // Send email
-    await sendEmail(
-      pdfBytes,
-      clientName,
-      referralType,
-      referrerProfile?.email || ""
-    );
-
-    console.log(`Referral report sent for ${clientName} (${referralId})`);
+    console.log(`Referral report sent and saved for ${clientName} (${referralId})`);
 
     return new Response(
       JSON.stringify({ success: true, message: `Report sent for ${clientName}` }),
-      { status: 200, headers: { "Content-Type": "application/json" } }
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
     console.error("send-referral-report error:", error);
     return new Response(
       JSON.stringify({ error: (error as Error).message }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 });

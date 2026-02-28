@@ -312,6 +312,29 @@ export function ReferralForm({ referralId, initialData, userId }: ReferralFormPr
   const handleFinalSubmit = useCallback(async (stepData: Partial<Referral>) => {
     const savedId = await saveStepData(stepData, currentStep, true);
     if (savedId) {
+      // Generate and download the PDF report before redirecting
+      try {
+        const { data, error } = await supabase.functions.invoke(
+          'send-referral-report',
+          { body: { referral_id: savedId } }
+        );
+        if (data && !error) {
+          const blob = data instanceof Blob
+            ? data
+            : new Blob([data], { type: 'application/pdf' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'Referral-Report.pdf';
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        }
+      } catch {
+        // PDF download failed — email still sends via DB trigger
+      }
+
       toast({
         title: 'Referral Submitted',
         description: 'Your referral has been submitted successfully. Our team will be in touch.',

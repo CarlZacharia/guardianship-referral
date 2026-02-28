@@ -450,7 +450,7 @@ export function Step7ReviewSubmit({
                 id="submitter-name"
                 value={submitterName}
                 onChange={e => setSubmitterName(e.target.value)}
-                placeholder="First Last"
+                placeholder="Your Full Name"
               />
             </div>
             <div className="space-y-2">

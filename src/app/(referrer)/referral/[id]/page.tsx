@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { ReferralForm } from '@/components/referral/ReferralForm'
 import { ReferralReadOnly } from '@/components/referral/ReferralReadOnly'
+import { EditReferralButton } from '@/components/referral/EditReferralButton'
 import { notFound, redirect } from 'next/navigation'
 import { Metadata } from 'next'
 
@@ -10,10 +11,13 @@ export const metadata: Metadata = {
 
 export default async function ReferralDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>
+  searchParams: Promise<{ edit?: string }>
 }) {
   const { id } = await params
+  const { edit } = await searchParams
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
@@ -33,13 +37,29 @@ export default async function ReferralDetailPage({
   if (!referral) notFound()
 
   // Draft → show editable form at last saved step
-  if (referral.status === 'draft') {
+  // Submitted + ?edit=true → revert to draft and show editable form
+  const isEditing = referral.status === 'draft' || edit === 'true'
+
+  if (isEditing) {
+    // If submitted and user clicked Edit, revert status to draft
+    if (referral.status === 'submitted' && edit === 'true') {
+      await supabase
+        .from('referrals')
+        .update({ status: 'draft' })
+        .eq('id', id)
+      referral.status = 'draft'
+    }
+
     return (
       <div>
         <div className="mb-6">
-          <h1 className="text-2xl font-bold">Resume Referral</h1>
+          <h1 className="text-2xl font-bold">
+            {referral.status === 'draft' && edit === 'true' ? 'Edit Referral' : 'Resume Referral'}
+          </h1>
           <p className="text-muted-foreground mt-1">
-            Continuing from where you left off. Your progress is saved automatically.
+            {edit === 'true'
+              ? 'Make your changes and submit again when ready.'
+              : 'Continuing from where you left off. Your progress is saved automatically.'}
           </p>
         </div>
         <ReferralForm
@@ -51,14 +71,19 @@ export default async function ReferralDetailPage({
     )
   }
 
-  // Submitted / in-review / accepted → read-only view
+  // Submitted / in-review / accepted → read-only view with Edit button
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold">Referral Details</h1>
-        <p className="text-muted-foreground mt-1">
-          This referral has been submitted and is read-only.
-        </p>
+      <div className="mb-6 flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-bold">Referral Details</h1>
+          <p className="text-muted-foreground mt-1">
+            This referral has been submitted and is read-only.
+          </p>
+        </div>
+        {referral.status === 'submitted' && (
+          <EditReferralButton referralId={id} />
+        )}
       </div>
       <ReferralReadOnly referral={referral} />
     </div>
