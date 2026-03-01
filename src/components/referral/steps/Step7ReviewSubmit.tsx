@@ -7,6 +7,7 @@ import {
   Referral, REFERRAL_TYPE_LABELS, CAPACITY_LABELS,
   URGENCY_LABELS, ASSET_TYPE_LABELS, INCOME_LIMIT, PNA
 } from '@/lib/types/referral.types'
+import { getReferralWarnings, getReferralNextSteps } from '@/lib/referral-alerts'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -81,148 +82,62 @@ export function Step7ReviewSubmit({
   const [submitterCompany, setSubmitterCompany] = useState(referralData.submitted_by_company || '')
   const [error, setError] = useState('')
 
-  // --- Warnings array ---
-  const warnings: { key: string; message: string }[] = []
+  // Shared warnings (plain text)
+  const warnings = getReferralWarnings(referralData)
 
-  // Agent: no decision maker
-  const noCapacity = referralData.capacity_level === 'no_capacity'
-  const noPOA = !referralData.has_poa
-  const noGuardian = !referralData.has_prior_guardianship
-  if (noCapacity && noPOA && noGuardian) {
-    warnings.push({
-      key: 'agent',
-      message: 'There is currently not a decision maker with the ability and authority to sign the DCF documents and to obtain the documentation required by DCF.',
-    })
+  // Next steps — start with shared plain-text list, then build JSX-enriched
+  // versions for links where applicable.
+  const sharedNextSteps = getReferralNextSteps(referralData)
+
+  const LINK_OVERRIDES: Record<string, React.ReactNode> = {
+    qit: (
+      <span>
+        Obtain a QIT immediately.{' '}
+        <a href="#" className="text-primary underline font-medium">Click this link to obtain one now.</a>
+      </span>
+    ),
+    'fin-release-capacity': (
+      <span>
+        Have the applicant sign this financial release and upload it to us immediately.{' '}
+        Click <a href="/finrelease.pdf" target="_blank" rel="noopener noreferrer" className="text-primary underline font-medium">here</a> to upload.
+      </span>
+    ),
+    'fin-release-poa': (
+      <span>
+        Have the power of attorney agent sign this financial release and upload it to us immediately.{' '}
+        Click <a href="/finrelease.pdf" target="_blank" rel="noopener noreferrer" className="text-primary underline font-medium">here</a> to upload.
+      </span>
+    ),
+    'desig-rep-capacity': (
+      <span>
+        Have the applicant sign this designation of representative form and upload it to us immediately.{' '}
+        Click <a href="/desigrep.pdf" target="_blank" rel="noopener noreferrer" className="text-primary underline font-medium">here</a> to upload.
+      </span>
+    ),
+    'desig-rep-poa': (
+      <span>
+        Have the financial power of attorney agent sign this designation of representative form and upload it to us immediately.{' '}
+        Click <a href="/desigrep.pdf" target="_blank" rel="noopener noreferrer" className="text-primary underline font-medium">here</a> to upload.
+      </span>
+    ),
+    'auth-disclose-capacity': (
+      <span>
+        Have the applicant sign this authorization to disclose information and upload it to us immediately.{' '}
+        Click <a href="/authdisclose.pdf" target="_blank" rel="noopener noreferrer" className="text-primary underline font-medium">here</a> to upload.
+      </span>
+    ),
+    'auth-disclose-poa': (
+      <span>
+        Have the power of attorney agent sign this authorization to disclose information and upload it to us immediately.{' '}
+        Click <a href="/authdisclose.pdf" target="_blank" rel="noopener noreferrer" className="text-primary underline font-medium">here</a> to upload.
+      </span>
+    ),
   }
 
-  // QIT: income over limit without a QIT
-  const incomeOverLimit = (referralData.monthly_income || 0) > INCOME_LIMIT.income_limit
-  const noQIT = !(referralData as any).has_qit
-  if (incomeOverLimit && noQIT) {
-    warnings.push({
-      key: 'qit',
-      message: "The applicant's income is over the income limit. A qualified income trust is mandatory and must be obtained soon.",
-    })
-  }
-
-  // --- Next Steps array ---
-  const nextSteps: { key: string; message: React.ReactNode }[] = []
-
-  // Uploaded document types
-  const uploadedDocTypes = new Set(
-    (referralData.documents || []).map(d => d.doc_type)
-  )
-  const hasPOAUploaded = uploadedDocTypes.has('poa')
-  const hasFinReleaseUploaded = uploadedDocTypes.has('financial_disclosure')
-  const hasDesigRepUploaded = uploadedDocTypes.has('designation_of_rep')
-  const hasCapacity = referralData.capacity_level === 'has_capacity'
-  const hasPOA = !!referralData.has_poa
-
-  if (noCapacity && noPOA && noGuardian) {
-    nextSteps.push({
-      key: 'agent',
-      message: 'There is no one with authority to obtain the documentation and sign documents required by DCF. A guardian must be sought immediately.',
-    })
-  }
-
-  if (incomeOverLimit && noQIT) {
-    nextSteps.push({
-      key: 'qit',
-      message: (
-        <span>
-          Obtain a QIT immediately.{' '}
-          <a href="#" className="text-primary underline font-medium">Click this link to obtain one now.</a>
-        </span>
-      ),
-    })
-  }
-
-  // POA exists but not uploaded
-  if (hasPOA && !hasPOAUploaded) {
-    nextSteps.push({
-      key: 'poa-upload',
-      message: 'Please upload a copy of the Executed Power of Attorney immediately for review.',
-    })
-  }
-
-  // Financial release not uploaded + applicant has capacity
-  if (!hasFinReleaseUploaded && hasCapacity) {
-    nextSteps.push({
-      key: 'fin-release-capacity',
-      message: (
-        <span>
-          Have the applicant sign this financial release and upload it to us immediately.{' '}
-          Click <a href="/finrelease.pdf" target="_blank" rel="noopener noreferrer" className="text-primary underline font-medium">here</a> to upload.
-        </span>
-      ),
-    })
-  }
-
-  // Financial release not uploaded + has POA
-  if (!hasFinReleaseUploaded && hasPOA) {
-    nextSteps.push({
-      key: 'fin-release-poa',
-      message: (
-        <span>
-          Have the power of attorney agent sign this financial release and upload it to us immediately.{' '}
-          Click <a href="/finrelease.pdf" target="_blank" rel="noopener noreferrer" className="text-primary underline font-medium">here</a> to upload.
-        </span>
-      ),
-    })
-  }
-
-  // Designation of representative not uploaded + applicant has capacity
-  if (!hasDesigRepUploaded && hasCapacity) {
-    nextSteps.push({
-      key: 'desig-rep-capacity',
-      message: (
-        <span>
-          Have the applicant sign this designation of representative form and upload it to us immediately.{' '}
-          Click <a href="/desigrep.pdf" target="_blank" rel="noopener noreferrer" className="text-primary underline font-medium">here</a> to upload.
-        </span>
-      ),
-    })
-  }
-
-  // Designation of representative not uploaded + has POA
-  if (!hasDesigRepUploaded && hasPOA) {
-    nextSteps.push({
-      key: 'desig-rep-poa',
-      message: (
-        <span>
-          Have the financial power of attorney agent sign this designation of representative form and upload it to us immediately.{' '}
-          Click <a href="/desigrep.pdf" target="_blank" rel="noopener noreferrer" className="text-primary underline font-medium">here</a> to upload.
-        </span>
-      ),
-    })
-  }
-
-  // Authorization to disclose not uploaded + applicant has capacity
-  const hasAuthDiscloseUploaded = uploadedDocTypes.has('authorization_to_disclose')
-  if (!hasAuthDiscloseUploaded && hasCapacity) {
-    nextSteps.push({
-      key: 'auth-disclose-capacity',
-      message: (
-        <span>
-          Have the applicant sign this authorization to disclose information and upload it to us immediately.{' '}
-          Click <a href="/authdisclose.pdf" target="_blank" rel="noopener noreferrer" className="text-primary underline font-medium">here</a> to upload.
-        </span>
-      ),
-    })
-  }
-
-  // Authorization to disclose not uploaded + has POA
-  if (!hasAuthDiscloseUploaded && hasPOA) {
-    nextSteps.push({
-      key: 'auth-disclose-poa',
-      message: (
-        <span>
-          Have the power of attorney agent sign this authorization to disclose information and upload it to us immediately.{' '}
-          Click <a href="/authdisclose.pdf" target="_blank" rel="noopener noreferrer" className="text-primary underline font-medium">here</a> to upload.
-        </span>
-      ),
-    })
-  }
+  const nextSteps = sharedNextSteps.map(ns => ({
+    key: ns.key,
+    message: LINK_OVERRIDES[ns.key] ?? ns.message,
+  }))
 
   const handleSubmit = async () => {
     if (!certify) {
@@ -313,6 +228,7 @@ export function Step7ReviewSubmit({
           label="Case Type"
           value={referralData.referral_type ? REFERRAL_TYPE_LABELS[referralData.referral_type] : undefined}
         />
+        <ReviewRow label="Reason for Request" value={referralData.reason_for_request} />
         <ReviewRow
           label="Name"
           value={referralData.client_full_legal_name ||

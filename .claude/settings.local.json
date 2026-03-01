@@ -6,7 +6,8 @@
       "Bash(npx shadcn@latest add:*)",
       "Bash(npm install:*)",
       "Bash(node -e:*)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(xargs grep -l \"View\\\\|view.*referral\")"
     ]
   }
 }

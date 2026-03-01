@@ -15,6 +15,7 @@ import {
   Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue
 } from '@/components/ui/select';
@@ -66,6 +67,7 @@ export function Step1Referral({ defaultValues, onComplete, navProps, autoSave }:
       facility_name_freetext: defaultValues.facility_name_freetext || '',
       urgency: defaultValues.urgency || 'routine',
       referral_type: defaultValues.referral_type || undefined,
+      reason_for_request: defaultValues.reason_for_request || '',
       client_first_name: defaultValues.client_first_name || '',
       client_last_name: defaultValues.client_last_name || '',
       client_full_legal_name: defaultValues.client_full_legal_name || '',
@@ -288,6 +290,25 @@ export function Step1Referral({ defaultValues, onComplete, navProps, autoSave }:
                         <Label htmlFor="type-both" className="cursor-pointer font-normal">Both</Label>
                       </div>
                     </RadioGroup>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Reason for Request */}
+            <FormField
+              control={form.control}
+              name="reason_for_request"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Reason for Request</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder="Describe the reason for this referral request..."
+                      className="min-h-20"
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

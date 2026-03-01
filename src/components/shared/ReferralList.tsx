@@ -8,7 +8,7 @@ import {
   ReferralStatus, ReferralType, UrgencyLevel,
   STATUS_LABELS, REFERRAL_TYPE_LABELS, URGENCY_LABELS
 } from '@/lib/types/referral.types'
-import { FileEdit, Eye, AlertTriangle, Zap } from 'lucide-react'
+import { FileEdit, Eye, AlertTriangle, Zap, FileDown, FileText } from 'lucide-react'
 
 // ============================================================
 // StatusBadge
@@ -129,19 +129,43 @@ export function ReferralList({
                   </div>
                 </div>
 
-                <Button
-                  asChild
-                  variant={isDraft && showEditDraft ? 'default' : 'outline'}
-                  size="sm"
-                >
-                  <Link href={`${basePath}/${referral.id}`}>
-                    {isDraft && showEditDraft ? (
-                      <><FileEdit className="w-3.5 h-3.5 mr-1.5" /> Resume</>
-                    ) : (
-                      <><Eye className="w-3.5 h-3.5 mr-1.5" /> View</>
-                    )}
-                  </Link>
-                </Button>
+                <div className="flex items-center gap-2">
+                  {!isDraft && (
+                    <>
+                      <Button asChild variant="outline" size="sm">
+                        <a
+                          href={`/api/referral/${referral.id}/medicaid-forms`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          <FileText className="w-3.5 h-3.5 mr-1.5" /> Medicaid Forms
+                        </a>
+                      </Button>
+                      <Button asChild variant="outline" size="sm">
+                        <a
+                          href={`/api/referral/${referral.id}/report`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          <FileDown className="w-3.5 h-3.5 mr-1.5" /> Report
+                        </a>
+                      </Button>
+                    </>
+                  )}
+                  <Button
+                    asChild
+                    variant={isDraft && showEditDraft ? 'default' : 'outline'}
+                    size="sm"
+                  >
+                    <Link href={`${basePath}/${referral.id}`}>
+                      {isDraft && showEditDraft ? (
+                        <><FileEdit className="w-3.5 h-3.5 mr-1.5" /> Resume</>
+                      ) : (
+                        <><Eye className="w-3.5 h-3.5 mr-1.5" /> View</>
+                      )}
+                    </Link>
+                  </Button>
+                </div>
               </div>
             </div>
           )

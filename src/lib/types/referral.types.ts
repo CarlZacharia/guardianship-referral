@@ -149,6 +149,7 @@ export interface Referral {
   facility_id?: string;
   facility_name_freetext?: string;
   referral_type?: ReferralType;
+  reason_for_request?: string;
   urgency?: UrgencyLevel;
   status?: ReferralStatus;
 
@@ -303,6 +304,7 @@ export interface Step1Data {
   facility_name_freetext?: string;
   urgency: UrgencyLevel;
   referral_type: ReferralType;
+  reason_for_request?: string;
   client_first_name: string;
   client_last_name: string;
   client_full_legal_name?: string;

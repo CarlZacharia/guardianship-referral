@@ -72,6 +72,12 @@ export function ReferralReadOnly({ referral, isStaffView }: ReferralReadOnlyProp
               </div>
             )}
           </div>
+          {referral.reason_for_request && (
+            <div className="mt-4 pt-4 border-t">
+              <span className="text-sm text-muted-foreground">Reason for Request</span>
+              <p className="text-sm font-medium mt-1 whitespace-pre-wrap">{referral.reason_for_request}</p>
+            </div>
+          )}
         </CardContent>
       </Card>
 

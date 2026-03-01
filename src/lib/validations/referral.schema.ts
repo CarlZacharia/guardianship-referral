@@ -49,6 +49,7 @@ export const step1Schema = z.object({
   referral_type: z.enum(['guardianship', 'medicaid', 'both'], {
     required_error: 'Please select a referral type',
   }),
+  reason_for_request: z.string().optional(),
 
   // Client identity
   client_first_name: z.string().min(1, 'First name is required'),
