@@ -303,14 +303,6 @@ export function ReferralForm({ referralId, initialData, userId, referrerOrganiza
     window.scrollTo(0, 0);
   }, [activeSteps, referralData.steps_completed]);
 
-  const handleSaveDraft = useCallback(async (stepData: Partial<Referral>) => {
-    await saveStepData(stepData, currentStep);
-    toast({
-      title: 'Draft Saved',
-      description: 'Your progress has been saved. You can return to complete this form later.',
-    });
-  }, [saveStepData, currentStep, toast]);
-
   const handleFinalSubmit = useCallback(async (stepData: Partial<Referral>) => {
     const savedId = await saveStepData(stepData, currentStep, true);
     if (savedId) {
@@ -372,7 +364,6 @@ export function ReferralForm({ referralId, initialData, userId, referrerOrganiza
   // Step navigation props
   const navProps = {
     onBack: handleBack,
-    onSaveDraft: handleSaveDraft,
     isSaving,
     isFirstStep,
     isLastStep,

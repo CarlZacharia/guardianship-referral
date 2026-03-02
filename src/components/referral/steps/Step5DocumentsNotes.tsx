@@ -281,7 +281,6 @@ export function Step5DocumentsNotes({ defaultValues, referralId, onComplete, nav
       <StepNavigation
         {...navProps}
         onNext={handleNext}
-        currentStepData={{ notes: form.getValues('notes') }}
         saveStatus={saveStatus}
       />
     </Card>

@@ -26,7 +26,7 @@ export default async function ReferrerLayout({
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-[#F5F6F8]">
       <ReferrerNav profile={profile} />
       <main className="max-w-4xl mx-auto px-4 py-8">
         {children}

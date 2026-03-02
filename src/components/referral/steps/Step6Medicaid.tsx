@@ -344,7 +344,6 @@ export function Step6Medicaid({ defaultValues, onComplete, navProps, autoSave }:
       <StepNavigation
         {...navProps}
         onNext={handleNext}
-        currentStepData={form.getValues() as Partial<Referral>}
         saveStatus={saveStatus}
       />
     </Card>

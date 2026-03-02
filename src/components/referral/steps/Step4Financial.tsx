@@ -470,7 +470,6 @@ export function Step4Financial({ defaultValues, referralType, referralId, onComp
       <StepNavigation
         {...navProps}
         onNext={handleNext}
-        currentStepData={form.getValues() as Partial<Referral>}
         saveStatus={saveStatus}
       />
     </Card>

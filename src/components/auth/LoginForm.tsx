@@ -117,7 +117,7 @@ export function LoginForm({ redirectTo, message }: LoginFormProps) {
             </div>
           </div>
 
-          <Button type="submit" className="w-full" disabled={loading}>
+          <Button type="submit" className="w-full cursor-pointer" disabled={loading}>
             {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
             Sign In
           </Button>

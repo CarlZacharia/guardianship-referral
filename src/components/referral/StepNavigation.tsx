@@ -3,13 +3,11 @@
 // src/components/referral/StepNavigation.tsx
 
 import { Button } from '@/components/ui/button';
-import { Loader2, ChevronLeft, ChevronRight, Save, Check, AlertCircle } from 'lucide-react';
-import { Referral } from '@/lib/types/referral.types';
+import { Loader2, ChevronLeft, ChevronRight, Check, AlertCircle } from 'lucide-react';
 import { SaveStatus } from '@/hooks/use-auto-save';
 
 export interface StepNavProps {
   onBack: () => void;
-  onSaveDraft: (data: Partial<Referral>) => Promise<void>;
   isSaving: boolean;
   isFirstStep: boolean;
   isLastStep: boolean;
@@ -17,15 +15,12 @@ export interface StepNavProps {
 
 interface StepNavigationProps extends StepNavProps {
   onNext: () => void;           // triggers form submission / validation
-  currentStepData?: Partial<Referral>; // for save draft
   saveStatus?: SaveStatus;
 }
 
 export function StepNavigation({
   onBack,
   onNext,
-  onSaveDraft,
-  currentStepData,
   isSaving,
   isFirstStep,
   isLastStep,
@@ -63,24 +58,6 @@ export function StepNavigation({
             <AlertCircle className="w-3 h-3" />
             Save failed
           </span>
-        )}
-
-        {/* Save Draft */}
-        {!isLastStep && (
-          <Button
-            type="button"
-            variant="ghost"
-            onClick={() => currentStepData && onSaveDraft(currentStepData)}
-            disabled={isSaving}
-            className="text-muted-foreground"
-          >
-            {isSaving ? (
-              <Loader2 className="w-4 h-4 mr-1 animate-spin" />
-            ) : (
-              <Save className="w-4 h-4 mr-1" />
-            )}
-            Save Draft
-          </Button>
         )}
 
         {/* Next / Submit */}

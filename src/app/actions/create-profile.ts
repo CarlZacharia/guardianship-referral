@@ -16,6 +16,7 @@ export async function createProfile(data: {
   mailing_zip?: string
   role: string
   referrer_type?: string
+  facility_id?: string
 }) {
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,

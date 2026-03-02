@@ -119,7 +119,7 @@ export function ReferrersTable({ referrers, referralCounts }: ReferrersTableProp
               </div>
               <div className="space-y-2">
                 <Label>Organization / Facility</Label>
-                <Input value={form.organization} onChange={set('organization')} placeholder="e.g., Naples Community Hospital" />
+                <Input value={form.organization} onChange={set('organization')} placeholder="e.g., General Hospital" />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">

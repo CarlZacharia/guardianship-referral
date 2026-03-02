@@ -11,6 +11,10 @@ export default async function LoginPage({
   searchParams: Promise<{ redirectTo?: string; message?: string }>
 }) {
   const { redirectTo, message } = await searchParams
-  return <LoginForm redirectTo={redirectTo} message={message} />
+  return (
+    <div className="max-w-md mx-auto">
+      <LoginForm redirectTo={redirectTo} message={message} />
+    </div>
+  )
 }
 

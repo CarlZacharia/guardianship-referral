@@ -6,6 +6,10 @@ export const metadata: Metadata = {
 }
 
 export default function RegisterPage() {
-  return <RegisterForm />
+  return (
+    <div className="max-w-md mx-auto">
+      <RegisterForm />
+    </div>
+  )
 }
 

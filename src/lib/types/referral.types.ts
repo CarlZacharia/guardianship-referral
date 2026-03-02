@@ -44,6 +44,7 @@ export interface Profile {
   last_name: string;
   title?: string;
   organization?: string;
+  facility_id?: string;
   phone?: string;
   email: string;
   is_active: boolean;

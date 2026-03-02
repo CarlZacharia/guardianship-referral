@@ -602,7 +602,6 @@ export function Step1Referral({ defaultValues, onComplete, navProps, autoSave, r
       <StepNavigation
         {...navProps}
         onNext={handleNext}
-        currentStepData={form.getValues() as unknown as Partial<Referral>}
         saveStatus={saveStatus}
       />
     </Card>

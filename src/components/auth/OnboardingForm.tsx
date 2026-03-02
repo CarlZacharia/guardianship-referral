@@ -51,17 +51,17 @@ export function OnboardingForm({ profile, userId }: OnboardingFormProps) {
     resolver: zodResolver(onboardingSchema),
     defaultValues: {
       referrer_type: profile.referrer_type || undefined,
-      mailing_street: '',
-      mailing_city: '',
-      mailing_state: 'FL',
-      mailing_zip: '',
+      mailing_street: profile.mailing_street || '',
+      mailing_city: profile.mailing_city || '',
+      mailing_state: profile.mailing_state || 'FL',
+      mailing_zip: profile.mailing_zip || '',
       billing_same_as_mailing: false,
       billing_street: '',
       billing_city: '',
       billing_state: 'FL',
       billing_zip: '',
-      primary_contact_name: '',
-      primary_contact_phone: '',
+      primary_contact_name: [profile.first_name, profile.last_name].filter(Boolean).join(' '),
+      primary_contact_phone: profile.phone || '',
       primary_contact_email: profile.email || '',
       billing_contact_name: '',
       billing_contact_phone: '',
@@ -158,6 +158,9 @@ export function OnboardingForm({ profile, userId }: OnboardingFormProps) {
 
             {/* ── Section 2: Mailing Address ── */}
             <SectionHeader icon={MapPin} title="Mailing Address" />
+            {profile.organization && (
+              <p className="text-sm font-medium">{profile.organization}</p>
+            )}
             <div className="space-y-4">
               <FormField
                 control={form.control}
@@ -392,8 +395,8 @@ export function OnboardingForm({ profile, userId }: OnboardingFormProps) {
                 <div className="text-sm text-muted-foreground space-y-2">
                   <p className="font-medium text-foreground">Fee information will be provided here.</p>
                   <p>
-                    Our fee schedule for guardianship and Medicaid referrals will be displayed
-                    in this section. For questions about fees, please contact our office at{' '}
+                    <a href="/forms/feeSchedule.pdf" download className="text-primary hover:underline font-medium">Download Our Fee Schedule</a>.
+                    For questions about fees, please contact our office at{' '}
                     <a href="tel:2393454545" className="text-primary hover:underline">239.345.4545</a>.
                   </p>
                 </div>

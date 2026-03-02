@@ -10,6 +10,7 @@ export default async function VerifyPage({
 }) {
   const { email } = await searchParams
   return (
+    <div className="max-w-md mx-auto">
     <Card>
       <CardHeader className="text-center">
         <div className="mx-auto w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-2">
@@ -29,8 +30,8 @@ export default async function VerifyPage({
         </p>
         <p className="text-sm text-muted-foreground">
           If you don&apos;t see it, check your spam folder or contact{' '}
-          <a href="mailto:intake@zacfreylaw.com.com" className="text-primary hover:underline">
-            intake@zacfreylaw.com.com
+          <a href="mailto:intake@zacbrownlaw.com" className="text-primary hover:underline">
+            intake@zacbrownlaw.com
           </a>.
         </p>
         <Button variant="outline" asChild className="w-full">
@@ -38,6 +39,7 @@ export default async function VerifyPage({
         </Button>
       </CardContent>
     </Card>
+    </div>
   )
 }
 

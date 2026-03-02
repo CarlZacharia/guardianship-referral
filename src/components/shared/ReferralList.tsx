@@ -1,13 +1,15 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { format } from 'date-fns'
 import {
   ReferralStatus, ReferralType, UrgencyLevel,
   STATUS_LABELS, REFERRAL_TYPE_LABELS, URGENCY_LABELS
 } from '@/lib/types/referral.types'
-import { FileEdit, Eye, AlertTriangle, Zap, FileDown, FileText } from 'lucide-react'
+import { FileEdit, Eye, AlertTriangle, Zap, FileDown, FileText, Loader2 } from 'lucide-react'
 
 // ============================================================
 // StatusBadge
@@ -61,13 +63,24 @@ export function ReferralList({
   showEditDraft,
   isStaffView,
 }: ReferralListProps) {
+  const router = useRouter()
+  const [navigating, setNavigating] = useState(false)
+
   if (referrals.length === 0) {
     return (
       <div className="text-center py-12 bg-white rounded-lg border">
         <p className="text-muted-foreground">{emptyMessage}</p>
         {!isStaffView && (
-          <Button asChild className="mt-4">
-            <Link href="/referral/new">Submit Your First Referral</Link>
+          <Button
+            className="mt-4 cursor-pointer"
+            disabled={navigating}
+            onClick={() => {
+              setNavigating(true)
+              router.push('/referral/new')
+            }}
+          >
+            {navigating && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+            Submit Your First Referral
           </Button>
         )}
       </div>

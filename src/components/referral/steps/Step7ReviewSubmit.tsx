@@ -419,8 +419,8 @@ export function Step7ReviewSubmit({
 
           <p className="text-xs text-center text-muted-foreground">
             Submitted referrals are routed to{' '}
-            <a href="mailto:intake@zacfreylaw.com" className="text-primary">
-              intake@zacfreylaw.com
+            <a href="mailto:intake@zacbrownlaw.com" className="text-primary">
+              intake@zacbrownlaw.com
             </a>
             . You will receive a confirmation and can track status in your dashboard.
           </p>

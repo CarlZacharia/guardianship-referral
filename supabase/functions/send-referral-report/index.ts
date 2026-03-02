@@ -6,7 +6,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { PDFDocument, StandardFonts, rgb } from "https://esm.sh/pdf-lib@1.17.1";
 
 // ─── Constants ───────────────────────────────────────────────────────
-const FIRM_EMAIL = "intake@zacfreylaw.com";
+const FIRM_EMAIL = "intake@zacbrownlaw.com";
 const PNA = 160;
 
 const REFERRAL_TYPE_LABELS: Record<string, string> = {
@@ -508,7 +508,7 @@ async function sendEmail(
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      from: "Zacharia Brown Portal <noreply@zacfreylaw.com>",
+      from: "Zacharia Brown Portal <noreply@zacbrownlaw.com>",
       to: recipients,
       subject: `New Referral Submitted: ${clientName} (${referralType})`,
       text: [

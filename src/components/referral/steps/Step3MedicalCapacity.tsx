@@ -295,7 +295,6 @@ export function Step3MedicalCapacity({ defaultValues, onComplete, navProps, auto
       <StepNavigation
         {...navProps}
         onNext={handleNext}
-        currentStepData={form.getValues() as Partial<Referral>}
         saveStatus={saveStatus}
       />
     </Card>

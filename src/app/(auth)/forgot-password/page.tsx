@@ -36,6 +36,7 @@ export default function ForgotPasswordPage() {
 
   if (sent) {
     return (
+      <div className="max-w-md mx-auto">
       <Card>
         <CardHeader className="text-center">
           <CardTitle>Reset Link Sent</CardTitle>
@@ -47,10 +48,12 @@ export default function ForgotPasswordPage() {
           </Button>
         </CardContent>
       </Card>
+      </div>
     )
   }
 
   return (
+    <div className="max-w-md mx-auto">
     <Card>
       <CardHeader>
         <CardTitle>Reset Password</CardTitle>
@@ -88,6 +91,7 @@ export default function ForgotPasswordPage() {
         </form>
       </CardContent>
     </Card>
+    </div>
   )
 }
 

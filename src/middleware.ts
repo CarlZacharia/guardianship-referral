@@ -33,7 +33,7 @@ export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
   // Public routes — no auth needed
-  const publicRoutes = ['/login', '/register', '/verify', '/forgot-password', '/auth/callback'];
+  const publicRoutes = ['/login', '/register', '/verify', '/forgot-password', '/auth/callback', '/why-hire-us'];
   const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route));
 
   if (!user && !isPublicRoute) {
@@ -58,8 +58,17 @@ export async function middleware(request: NextRequest) {
       .eq('id', user.id)
       .single();
 
+    // No profile row — auth user exists but profile creation failed.
+    // Sign out and redirect to login to avoid infinite redirect loop.
+    if (!profile) {
+      await supabase.auth.signOut();
+      const url = request.nextUrl.clone();
+      url.pathname = '/login';
+      return NextResponse.redirect(url);
+    }
+
     const isOnboardingRoute = pathname.startsWith('/onboarding');
-    const isStaffOrAdmin = profile && ['staff', 'admin'].includes(profile.role);
+    const isStaffOrAdmin = ['staff', 'admin'].includes(profile.role);
 
     // Onboarding gate — referrers must complete onboarding before accessing the app
     if (profile && !isStaffOrAdmin) {

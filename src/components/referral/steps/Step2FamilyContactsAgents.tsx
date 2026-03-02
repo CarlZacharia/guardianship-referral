@@ -487,7 +487,6 @@ export function Step2FamilyContactsAgents({
       <StepNavigation
         {...navProps}
         onNext={handleNext}
-        currentStepData={form.getValues() as Partial<Referral>}
         saveStatus={saveStatus}
       />
     </Card>

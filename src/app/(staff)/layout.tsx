@@ -23,7 +23,7 @@ export default async function StaffLayout({
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-[#F5F6F8]">
       <StaffNav profile={profile} />
       <main className="max-w-7xl mx-auto px-4 py-8">
         {children}
