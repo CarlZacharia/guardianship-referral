@@ -73,9 +73,11 @@ interface ReferralFormProps {
   referralId?: string;      // if resuming a draft
   initialData?: Partial<Referral>;
   userId: string;
+  referrerOrganization?: string;
+  referrerType?: string;
 }
 
-export function ReferralForm({ referralId, initialData, userId }: ReferralFormProps) {
+export function ReferralForm({ referralId, initialData, userId, referrerOrganization, referrerType }: ReferralFormProps) {
   const router = useRouter();
   const supabase = createClient();
   const { toast } = useToast();
@@ -402,6 +404,8 @@ export function ReferralForm({ referralId, initialData, userId }: ReferralFormPr
             onComplete={handleStepComplete}
             navProps={navProps}
             autoSave={autoSave}
+            referrerOrganization={referrerOrganization}
+            referrerType={referrerType}
           />
         )}
         {currentStep === 2 && (

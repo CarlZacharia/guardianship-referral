@@ -3,13 +3,12 @@
 // src/components/referral/steps/Step1Referral.tsx
 // Combined step: Referral Source + Case Type + Client Identity + Marital Status
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { step1Schema, Step1FormData } from '@/lib/validations/referral.schema';
-import { Referral, Facility, FLORIDA_COUNTIES, AutoSaveProps } from '@/lib/types/referral.types';
+import { Referral, FLORIDA_COUNTIES, AutoSaveProps } from '@/lib/types/referral.types';
 import { useAutoSave } from '@/hooks/use-auto-save';
-import { createClient } from '@/lib/supabase/client';
 import { StepNavigation, StepNavProps } from '../StepNavigation';
 import {
   Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription
@@ -27,11 +26,15 @@ import { Switch } from '@/components/ui/switch';
 import { Building2, UserCircle, MapPin, DollarSign, Heart } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
+const FACILITY_REFERRER_TYPES = ['nursing_home', 'alf', 'hospital', 'home_health'];
+
 interface Step1Props {
   defaultValues: Partial<Referral>;
   onComplete: (data: Partial<Referral>, advance?: boolean) => Promise<void>;
   navProps: StepNavProps;
   autoSave: AutoSaveProps;
+  referrerOrganization?: string;
+  referrerType?: string;
 }
 
 function SectionHeader({ icon: Icon, title }: { icon: React.ComponentType<{className?: string}>; title: string }) {
@@ -54,17 +57,14 @@ function calculateAge(dob: string): number | undefined {
   return age >= 0 ? age : undefined;
 }
 
-export function Step1Referral({ defaultValues, onComplete, navProps, autoSave }: Step1Props) {
-  const supabase = createClient();
-  const [facilities, setFacilities] = useState<Facility[]>([]);
-  const [loadingFacilities, setLoadingFacilities] = useState(true);
-  const [showFreetext, setShowFreetext] = useState(!defaultValues.facility_id);
+export function Step1Referral({ defaultValues, onComplete, navProps, autoSave, referrerOrganization, referrerType }: Step1Props) {
+  const isFacilityReferrer = FACILITY_REFERRER_TYPES.includes(referrerType || '');
 
   const form = useForm<Step1FormData>({
     resolver: zodResolver(step1Schema),
     defaultValues: {
       facility_id: defaultValues.facility_id || '',
-      facility_name_freetext: defaultValues.facility_name_freetext || '',
+      facility_name_freetext: defaultValues.facility_name_freetext || referrerOrganization || '',
       urgency: defaultValues.urgency || 'routine',
       referral_type: defaultValues.referral_type || undefined,
       reason_for_request: defaultValues.reason_for_request || '',
@@ -110,18 +110,6 @@ export function Step1Referral({ defaultValues, onComplete, navProps, autoSave }:
     return () => autoSave.registerFlush(null);
   }, [autoSave, flushSave]);
 
-  useEffect(() => {
-    async function loadFacilities() {
-      const { data } = await supabase
-        .from('facilities')
-        .select('id, name, city, phone')
-        .eq('is_active', true)
-        .order('name');
-      setFacilities(data || []);
-      setLoadingFacilities(false);
-    }
-    loadFacilities();
-  }, [supabase]);
 
   const dobValue = form.watch('client_dob');
   const calculatedAge = calculateAge(dobValue);
@@ -157,80 +145,22 @@ export function Step1Referral({ defaultValues, onComplete, navProps, autoSave }:
             {/* ── Referral Source ── */}
             <SectionHeader icon={Building2} title="Referral Source" />
 
-            <div className="space-y-3">
-              <Label className="text-sm font-medium">Referring Facility</Label>
-              <div className="flex gap-2 text-sm">
-                <button
-                  type="button"
-                  onClick={() => setShowFreetext(false)}
-                  className={cn(
-                    'px-3 py-1 rounded-full border transition-colors',
-                    !showFreetext
-                      ? 'bg-primary text-primary-foreground border-primary'
-                      : 'border-input text-muted-foreground hover:border-primary'
-                  )}
-                >
-                  Select from list
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowFreetext(true)}
-                  className={cn(
-                    'px-3 py-1 rounded-full border transition-colors',
-                    showFreetext
-                      ? 'bg-primary text-primary-foreground border-primary'
-                      : 'border-input text-muted-foreground hover:border-primary'
-                  )}
-                >
-                  Not in list — enter manually
-                </button>
-              </div>
-
-              {!showFreetext ? (
-                <FormField
-                  control={form.control}
-                  name="facility_id"
-                  render={({ field }) => (
-                    <FormItem>
-                      <Select onValueChange={field.onChange} defaultValue={field.value} disabled={loadingFacilities}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder={loadingFacilities ? 'Loading facilities...' : 'Select facility...'} />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {facilities.map(f => (
-                            <SelectItem key={f.id} value={f.id}>
-                              <div>
-                                <div className="font-medium">{f.name}</div>
-                                {f.city && <div className="text-xs text-muted-foreground">{f.city}</div>}
-                              </div>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              ) : (
-                <FormField
-                  control={form.control}
-                  name="facility_name_freetext"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormControl>
-                        <Input placeholder="Enter facility name" {...field} />
-                      </FormControl>
-                      <FormDescription>
-                        If this facility refers future cases, staff can add them to the master list.
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+            <FormField
+              control={form.control}
+              name="facility_name_freetext"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{isFacilityReferrer ? 'Requesting Facility' : 'Requestor'}</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder={isFacilityReferrer ? 'Facility name' : 'Your name or organization'}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
               )}
-            </div>
+            />
 
             {/* Urgency */}
             <FormField

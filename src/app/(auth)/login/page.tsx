@@ -2,7 +2,7 @@ import { LoginForm } from '@/components/auth/LoginForm'
 import { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Sign In — Zacharia Frey Referral Portal',
+  title: 'Sign In — Zacharia Brown Referral Portal',
 }
 
 export default async function LoginPage({

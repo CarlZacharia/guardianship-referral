@@ -11,7 +11,7 @@ export type MedicaidStatus = 'yes' | 'no' | 'applied';
 export type MedicaidApplicationType = 'new' | 'renewal';
 export type UserRole = 'referrer' | 'staff' | 'admin';
 export type ReferrerType =
-  | 'nursing_home' | 'hospital' | 'home_health'
+  | 'nursing_home' | 'alf' | 'hospital' | 'home_health'
   | 'attorney' | 'social_worker' | 'family' | 'other';
 
 export type AssetType =
@@ -42,6 +42,7 @@ export interface Profile {
   role: UserRole;
   first_name: string;
   last_name: string;
+  title?: string;
   organization?: string;
   phone?: string;
   email: string;
@@ -433,6 +434,7 @@ export const STATUS_LABELS: Record<ReferralStatus, string> = {
 
 export const REFERRER_TYPE_LABELS: Record<ReferrerType, string> = {
   nursing_home: 'Nursing Home / SNF',
+  alf: 'Assisted Living Facility',
   hospital: 'Hospital / Health System',
   home_health: 'Home Health Agency',
   attorney: 'Attorney / Law Firm',

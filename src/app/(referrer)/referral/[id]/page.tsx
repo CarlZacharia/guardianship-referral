@@ -6,7 +6,7 @@ import { notFound, redirect } from 'next/navigation'
 import { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Referral — Zacharia Frey Portal',
+  title: 'Referral — Zacharia Brown Portal',
 }
 
 export default async function ReferralDetailPage({
@@ -35,6 +35,12 @@ export default async function ReferralDetailPage({
     .single()
 
   if (!referral) notFound()
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('organization, referrer_type')
+    .eq('id', user!.id)
+    .single()
 
   // Draft → show editable form at last saved step
   // Submitted + ?edit=true → revert to draft and show editable form
@@ -66,6 +72,8 @@ export default async function ReferralDetailPage({
           referralId={id}
           initialData={referral}
           userId={user!.id}
+          referrerOrganization={profile?.organization}
+          referrerType={profile?.referrer_type}
         />
       </div>
     )

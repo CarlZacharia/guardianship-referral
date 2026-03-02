@@ -3,7 +3,7 @@ import { ProfileForm } from '@/components/auth/ProfileForm'
 import { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'My Profile — Zacharia Frey Portal',
+  title: 'My Profile — Zacharia Brown Portal',
 }
 
 export default async function ProfilePage() {

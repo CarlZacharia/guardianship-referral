@@ -3,7 +3,7 @@ import { z } from 'zod';
 export const onboardingSchema = z.object({
   // Facility/User type
   referrer_type: z.enum(
-    ['nursing_home', 'hospital', 'home_health', 'attorney', 'social_worker', 'family', 'other'],
+    ['nursing_home', 'alf', 'hospital', 'home_health', 'attorney', 'social_worker', 'family', 'other'],
     { required_error: 'Please select a referrer type' }
   ),
 

@@ -390,7 +390,7 @@ export function Step7ReviewSubmit({
             <Label htmlFor="certify" className="text-sm leading-relaxed cursor-pointer">
               I certify that the information provided in this referral is accurate and complete
               to the best of my knowledge. I understand that this referral will be reviewed by
-              Zacharia Frey PLLC and that submitting false information may affect the handling
+              Zacharia Brown  and that submitting false information may affect the handling
               of this case.
             </Label>
           </div>

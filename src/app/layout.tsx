@@ -6,8 +6,8 @@ import { Toaster } from '@/components/ui/toaster'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Zacharia Frey PLLC — Client Referral Portal',
-  description: 'Submit guardianship and Medicaid referrals to Zacharia Frey PLLC',
+  title: 'Zacharia Brown  — Client Referral Portal',
+  description: 'Submit guardianship and Medicaid referrals to Zacharia Brown ',
 }
 
 export default function RootLayout({

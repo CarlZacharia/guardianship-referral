@@ -331,7 +331,7 @@ export function ReferralReport({ referral }: Props) {
 
         {/* Footer */}
         <Text style={s.footer} fixed>
-          Zacharia Frey Guardianship Referral Report — Generated {format(new Date(), 'MMM d, yyyy h:mm a')}
+          Zacharia Brown Guardianship Referral Report — Generated {format(new Date(), 'MMM d, yyyy h:mm a')}
         </Text>
       </Page>
     </Document>

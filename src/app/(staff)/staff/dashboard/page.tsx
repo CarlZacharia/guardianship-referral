@@ -4,7 +4,7 @@ import { StaffDashboardFilters } from '@/components/shared/StaffDashboardFilters
 import { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Staff Dashboard — Zacharia Frey Portal',
+  title: 'Staff Dashboard — Zacharia Brown Portal',
 }
 
 export default async function StaffDashboard({
@@ -61,21 +61,6 @@ export default async function StaffDashboard({
         <p className="text-muted-foreground mt-1">
           {counts.total} total · {counts.submitted} pending review · {counts.emergency} emergency
         </p>
-      </div>
-
-      {/* Summary cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        {[
-          { label: 'Total', value: counts.total, color: 'text-slate-700' },
-          { label: 'Awaiting Review', value: counts.submitted, color: 'text-blue-600' },
-          { label: 'In Review', value: counts.in_review, color: 'text-amber-600' },
-          { label: 'Emergency', value: counts.emergency, color: 'text-red-600' },
-        ].map(({ label, value, color }) => (
-          <div key={label} className="bg-white rounded-lg border p-4">
-            <div className={`text-2xl font-bold ${color}`}>{value}</div>
-            <div className="text-sm text-muted-foreground">{label}</div>
-          </div>
-        ))}
       </div>
 
       <StaffDashboardFilters />

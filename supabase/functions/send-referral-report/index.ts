@@ -235,7 +235,7 @@ async function generatePdf(referral: any, referrerProfile: any): Promise<Uint8Ar
 
   // Header
   pdf.drawHeader(
-    "Zacharia Frey PLLC",
+    "Zacharia Brown ",
     `Referral Report for ${clientName}`,
     typeLabel
   );
@@ -508,7 +508,7 @@ async function sendEmail(
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      from: "Zacharia Frey Portal <noreply@zacfreylaw.com>",
+      from: "Zacharia Brown Portal <noreply@zacfreylaw.com>",
       to: recipients,
       subject: `New Referral Submitted: ${clientName} (${referralType})`,
       text: [
@@ -518,7 +518,7 @@ async function sendEmail(
         ``,
         `Please see the attached PDF report for full details.`,
         ``,
-        `— Zacharia Frey PLLC Referral Portal`,
+        `— Zacharia Brown  Referral Portal`,
       ].join("\n"),
       attachments: [
         {

@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Edit Referrer — Zacharia Frey Portal',
+  title: 'Edit Referrer — Zacharia Brown Portal',
 }
 
 export default async function ReferrerDetailPage({

@@ -3,7 +3,7 @@ import { ReferrersTable } from '@/components/shared/ReferrersTable'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Referrers — Zacharia Frey Portal',
+  title: 'Referrers — Zacharia Brown Portal',
 }
 
 export default async function ReferrersPage() {

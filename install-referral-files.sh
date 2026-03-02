@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # ============================================================
-# Zacharia Frey PLLC — Referral Portal File Installer
+# Zacharia Brown  — Referral Portal File Installer
 # Run this from INSIDE your existing Next.js project folder:
 #   cd zacharia-frey-referral
 #   bash install-referral-files.sh
@@ -115,8 +115,8 @@ import { Toaster } from '@/components/ui/toaster'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Zacharia Frey PLLC — Client Referral Portal',
-  description: 'Submit guardianship and Medicaid referrals to Zacharia Frey PLLC',
+  title: 'Zacharia Brown  — Client Referral Portal',
+  description: 'Submit guardianship and Medicaid referrals to Zacharia Brown ',
 }
 
 export default function RootLayout({
@@ -272,7 +272,7 @@ export default function AuthLayout({
             ZF
           </div>
           <div>
-            <div className="font-semibold text-foreground">Zacharia Frey PLLC</div>
+            <div className="font-semibold text-foreground">Zacharia Brown </div>
             <div className="text-xs text-muted-foreground">
               Estate Planning · Elder Law · Asset Protection
             </div>
@@ -305,7 +305,7 @@ import { LoginForm } from '@/components/auth/LoginForm'
 import { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Sign In — Zacharia Frey Referral Portal',
+  title: 'Sign In — Zacharia Brown Referral Portal',
 }
 
 export default function LoginPage({
@@ -324,7 +324,7 @@ import { RegisterForm } from '@/components/auth/RegisterForm'
 import { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Create Account — Zacharia Frey Referral Portal',
+  title: 'Create Account — Zacharia Brown Referral Portal',
 }
 
 export default function RegisterPage() {
@@ -527,7 +527,7 @@ import Link from 'next/link'
 import { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'My Referrals — Zacharia Frey Portal',
+  title: 'My Referrals — Zacharia Brown Portal',
 }
 
 export default async function ReferrerDashboard() {
@@ -620,7 +620,7 @@ import { ReferralForm } from '@/components/referral/ReferralForm'
 import { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'New Referral — Zacharia Frey Portal',
+  title: 'New Referral — Zacharia Brown Portal',
 }
 
 export default async function NewReferralPage() {
@@ -651,7 +651,7 @@ import { notFound, redirect } from 'next/navigation'
 import { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Referral — Zacharia Frey Portal',
+  title: 'Referral — Zacharia Brown Portal',
 }
 
 export default async function ReferralDetailPage({
@@ -719,7 +719,7 @@ import { ProfileForm } from '@/components/auth/ProfileForm'
 import { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'My Profile — Zacharia Frey Portal',
+  title: 'My Profile — Zacharia Brown Portal',
 }
 
 export default async function ProfilePage() {
@@ -793,7 +793,7 @@ import { StaffDashboardFilters } from '@/components/shared/StaffDashboardFilters
 import { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Staff Dashboard — Zacharia Frey Portal',
+  title: 'Staff Dashboard — Zacharia Brown Portal',
 }
 
 export default async function StaffDashboard({
@@ -938,7 +938,7 @@ import { FacilitiesTable } from '@/components/shared/FacilitiesTable'
 import { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Facilities — Zacharia Frey Portal',
+  title: 'Facilities — Zacharia Brown Portal',
 }
 
 export default async function FacilitiesPage() {
@@ -1218,7 +1218,7 @@ export function RegisterForm() {
       <CardHeader>
         <CardTitle>Create Account</CardTitle>
         <CardDescription>
-          Register to submit referrals to Zacharia Frey PLLC.
+          Register to submit referrals to Zacharia Brown .
           Your account will be active once you verify your email.
         </CardDescription>
       </CardHeader>
@@ -5076,7 +5076,7 @@ export function Step9ReviewSubmit({
             <Label htmlFor="certify" className="text-sm leading-relaxed cursor-pointer">
               I certify that the information provided in this referral is accurate and complete
               to the best of my knowledge. I understand that this referral will be reviewed by
-              Zacharia Frey PLLC and that submitting false information may affect the handling
+              Zacharia Brown  and that submitting false information may affect the handling
               of this case.
             </Label>
           </div>
@@ -5260,7 +5260,7 @@ export function StaffNav({ profile }: { profile: Profile }) {
               ZF
             </div>
             <div className="hidden sm:block">
-              <div className="text-sm font-semibold leading-tight">Zacharia Frey PLLC</div>
+              <div className="text-sm font-semibold leading-tight">Zacharia Brown </div>
               <div className="flex items-center gap-1 text-xs text-slate-400">
                 <ShieldCheck className="w-3 h-3" />
                 Staff Portal

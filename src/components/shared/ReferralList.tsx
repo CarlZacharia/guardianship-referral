@@ -1,9 +1,8 @@
 'use client'
 
 import Link from 'next/link'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { formatDistanceToNow } from 'date-fns'
+import { format } from 'date-fns'
 import {
   ReferralStatus, ReferralType, UrgencyLevel,
   STATUS_LABELS, REFERRAL_TYPE_LABELS, URGENCY_LABELS
@@ -79,98 +78,87 @@ export function ReferralList({
 
   return (
     <div className="bg-white rounded-lg border overflow-hidden">
-      <div className="divide-y">
-        {referrals.map((referral) => {
-          const clientName = referral.client_first_name
-            ? `${referral.client_first_name} ${referral.client_last_name}`
-            : 'Client name pending'
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="border-b bg-muted/40 text-left text-xs font-medium text-muted-foreground">
+            <th className="px-4 py-3">Resident</th>
+            <th className="px-4 py-3">Case Type</th>
+            <th className="px-4 py-3">Status</th>
+            <th className="px-4 py-3">Date Submitted</th>
+            <th className="px-4 py-3 text-right">Actions</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y">
+          {referrals.map((referral) => {
+            const clientName = referral.client_first_name
+              ? `${referral.client_first_name} ${referral.client_last_name}`
+              : 'Client name pending'
 
-          const facilityName =
-            referral.facilities?.name ||
-            referral.facility_name_freetext ||
-            'Facility not specified'
+            const isDraft = referral.status === 'draft'
 
-          const referrerName = isStaffView && referral.profiles
-            ? `${referral.profiles.first_name} ${referral.profiles.last_name}${referral.profiles.organization ? ` · ${referral.profiles.organization}` : ''}`
-            : null
+            const dateDisplay = referral.submitted_at
+              ? format(new Date(referral.submitted_at), 'MMM d, yyyy')
+              : isDraft && referral.current_step
+                ? `Draft · Step ${referral.current_step}/7`
+                : '—'
 
-          const isDraft = referral.status === 'draft'
-          const updatedAt = referral.updated_at
-            ? formatDistanceToNow(new Date(referral.updated_at), { addSuffix: true })
-            : ''
-
-          return (
-            <div key={referral.id} className="p-4 hover:bg-slate-50 transition-colors">
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-medium text-foreground">{clientName}</span>
+            return (
+              <tr key={referral.id} className="hover:bg-slate-50 transition-colors">
+                <td className="px-4 py-3 font-medium">{clientName}</td>
+                <td className="px-4 py-3 text-muted-foreground">
+                  {REFERRAL_TYPE_LABELS[referral.referral_type as ReferralType] || 'Pending'}
+                </td>
+                <td className="px-4 py-3">
+                  <div className="flex items-center gap-1.5">
                     <StatusBadge status={referral.status} />
                     <UrgencyBadge urgency={referral.urgency} />
                   </div>
-                  <div className="text-sm text-muted-foreground mt-0.5 space-x-2">
-                    <span>{facilityName}</span>
-                    <span>·</span>
-                    <span>{REFERRAL_TYPE_LABELS[referral.referral_type as ReferralType] || 'Type pending'}</span>
-                    {isStaffView && referrerName && (
+                </td>
+                <td className="px-4 py-3 text-muted-foreground">{dateDisplay}</td>
+                <td className="px-4 py-3">
+                  <div className="flex items-center justify-end gap-2">
+                    {!isDraft && (
                       <>
-                        <span>·</span>
-                        <span>Referred by {referrerName}</span>
+                        <Button asChild variant="outline" size="sm">
+                          <a
+                            href={`/api/referral/${referral.id}/medicaid-forms`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            <FileText className="w-3.5 h-3.5 mr-1.5" /> MCD Forms
+                          </a>
+                        </Button>
+                        <Button asChild variant="outline" size="sm">
+                          <a
+                            href={`/api/referral/${referral.id}/report`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            <FileDown className="w-3.5 h-3.5 mr-1.5" /> Report
+                          </a>
+                        </Button>
                       </>
                     )}
+                    <Button
+                      asChild
+                      variant={isDraft && showEditDraft ? 'default' : 'outline'}
+                      size="sm"
+                    >
+                      <Link href={`${basePath}/${referral.id}`}>
+                        {isDraft && showEditDraft ? (
+                          <><FileEdit className="w-3.5 h-3.5 mr-1.5" /> Resume</>
+                        ) : (
+                          <><Eye className="w-3.5 h-3.5 mr-1.5" /> View</>
+                        )}
+                      </Link>
+                    </Button>
                   </div>
-                  {isDraft && referral.current_step && (
-                    <div className="text-xs text-amber-600 mt-1">
-                      Draft · Step {referral.current_step} of 7
-                    </div>
-                  )}
-                  <div className="text-xs text-muted-foreground mt-1">
-                    Updated {updatedAt}
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  {!isDraft && (
-                    <>
-                      <Button asChild variant="outline" size="sm">
-                        <a
-                          href={`/api/referral/${referral.id}/medicaid-forms`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          <FileText className="w-3.5 h-3.5 mr-1.5" /> Medicaid Forms
-                        </a>
-                      </Button>
-                      <Button asChild variant="outline" size="sm">
-                        <a
-                          href={`/api/referral/${referral.id}/report`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          <FileDown className="w-3.5 h-3.5 mr-1.5" /> Report
-                        </a>
-                      </Button>
-                    </>
-                  )}
-                  <Button
-                    asChild
-                    variant={isDraft && showEditDraft ? 'default' : 'outline'}
-                    size="sm"
-                  >
-                    <Link href={`${basePath}/${referral.id}`}>
-                      {isDraft && showEditDraft ? (
-                        <><FileEdit className="w-3.5 h-3.5 mr-1.5" /> Resume</>
-                      ) : (
-                        <><Eye className="w-3.5 h-3.5 mr-1.5" /> View</>
-                      )}
-                    </Link>
-                  </Button>
-                </div>
-              </div>
-            </div>
-          )
-        })}
-      </div>
+                </td>
+              </tr>
+            )
+          })}
+        </tbody>
+      </table>
     </div>
   )
 }

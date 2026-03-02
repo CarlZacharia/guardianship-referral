@@ -3,7 +3,7 @@ import { FacilitiesTable } from '@/components/shared/FacilitiesTable'
 import { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Facilities — Zacharia Frey Portal',
+  title: 'Facilities — Zacharia Brown Portal',
 }
 
 export default async function FacilitiesPage() {

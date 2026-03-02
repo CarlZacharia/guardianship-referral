@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { useState } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Profile } from '@/lib/types/referral.types'
@@ -12,15 +13,17 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { ClipboardList, Plus, User, LogOut, ChevronDown } from 'lucide-react'
+import { ClipboardList, Plus, User, LogOut, ChevronDown, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 export function ReferrerNav({ profile }: { profile: Profile }) {
   const pathname = usePathname()
   const router = useRouter()
   const supabase = createClient()
+  const [signingOut, setSigningOut] = useState(false)
 
   const signOut = async () => {
+    setSigningOut(true)
     await supabase.auth.signOut()
     router.push('/login')
     router.refresh()
@@ -85,8 +88,11 @@ export function ReferrerNav({ profile }: { profile: Profile }) {
               </Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={signOut} className="text-destructive">
-              <LogOut className="w-4 h-4 mr-2" /> Sign Out
+            <DropdownMenuItem onClick={signOut} disabled={signingOut} className="text-destructive">
+              {signingOut
+                ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Signing out...</>
+                : <><LogOut className="w-4 h-4 mr-2" /> Sign Out</>
+              }
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

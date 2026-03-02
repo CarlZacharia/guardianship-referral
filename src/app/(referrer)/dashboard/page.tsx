@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'My Referrals — Zacharia Frey Portal',
+  title: 'My Referrals — Zacharia Brown Portal',
 }
 
 export default async function ReferrerDashboard() {
@@ -52,9 +52,6 @@ export default async function ReferrerDashboard() {
         </Button>
       </div>
 
-      {/* Stats */}
-      <ReferralStats referrals={referrals || []} />
-
       {/* Referral List */}
       <ReferralList
         referrals={referrals || []}
@@ -65,28 +62,4 @@ export default async function ReferrerDashboard() {
   )
 }
 
-function ReferralStats({ referrals }: { referrals: any[] }) {
-  const drafts = referrals.filter(r => r.status === 'draft').length
-  const submitted = referrals.filter(r => r.status === 'submitted').length
-  const inReview = referrals.filter(r => r.status === 'in_review').length
-  const accepted = referrals.filter(r => r.status === 'accepted').length
-
-  const stats = [
-    { label: 'Drafts', value: drafts, color: 'text-slate-600' },
-    { label: 'Submitted', value: submitted, color: 'text-blue-600' },
-    { label: 'In Review', value: inReview, color: 'text-amber-600' },
-    { label: 'Accepted', value: accepted, color: 'text-green-600' },
-  ]
-
-  return (
-    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-      {stats.map(({ label, value, color }) => (
-        <div key={label} className="bg-white rounded-lg border p-4">
-          <div className={`text-2xl font-bold ${color}`}>{value}</div>
-          <div className="text-sm text-muted-foreground">{label}</div>
-        </div>
-      ))}
-    </div>
-  )
-}
 

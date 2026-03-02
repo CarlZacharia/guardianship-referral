@@ -3,12 +3,18 @@ import { ReferralForm } from '@/components/referral/ReferralForm'
 import { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'New Referral — Zacharia Frey Portal',
+  title: 'New Referral — Zacharia Brown Portal',
 }
 
 export default async function NewReferralPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('organization, referrer_type')
+    .eq('id', user!.id)
+    .single()
 
   return (
     <div>
@@ -18,7 +24,11 @@ export default async function NewReferralPage() {
           Your progress is saved automatically after each step.
         </p>
       </div>
-      <ReferralForm userId={user!.id} />
+      <ReferralForm
+        userId={user!.id}
+        referrerOrganization={profile?.organization}
+        referrerType={profile?.referrer_type}
+      />
     </div>
   )
 }

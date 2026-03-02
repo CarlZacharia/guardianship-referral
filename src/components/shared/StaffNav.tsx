@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { useState } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Profile } from '@/lib/types/referral.types'
@@ -9,15 +10,17 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
   DropdownMenuSeparator, DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
-import { LayoutDashboard, Building2, Users, LogOut, ChevronDown, ShieldCheck } from 'lucide-react'
+import { LayoutDashboard, Building2, Users, LogOut, ChevronDown, ShieldCheck, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 export function StaffNav({ profile }: { profile: Profile }) {
   const pathname = usePathname()
   const router = useRouter()
   const supabase = createClient()
+  const [signingOut, setSigningOut] = useState(false)
 
   const signOut = async () => {
+    setSigningOut(true)
     await supabase.auth.signOut()
     router.push('/login')
     router.refresh()
@@ -38,7 +41,7 @@ export function StaffNav({ profile }: { profile: Profile }) {
               ZF
             </div>
             <div className="hidden sm:block">
-              <div className="text-sm font-semibold leading-tight">Zacharia Frey PLLC</div>
+              <div className="text-sm font-semibold leading-tight">Zacharia Brown </div>
               <div className="flex items-center gap-1 text-xs text-slate-400">
                 <ShieldCheck className="w-3 h-3" />
                 Staff Portal
@@ -77,8 +80,11 @@ export function StaffNav({ profile }: { profile: Profile }) {
               Role: {profile.role}
             </div>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={signOut} className="text-destructive">
-              <LogOut className="w-4 h-4 mr-2" /> Sign Out
+            <DropdownMenuItem onClick={signOut} disabled={signingOut} className="text-destructive">
+              {signingOut
+                ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Signing out...</>
+                : <><LogOut className="w-4 h-4 mr-2" /> Sign Out</>
+              }
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

@@ -12,7 +12,7 @@ export default function OnboardingLayout({
             ZF
           </div>
           <div>
-            <div className="font-semibold text-foreground">Zacharia Frey PLLC</div>
+            <div className="font-semibold text-foreground">Zacharia Brown </div>
             <div className="text-xs text-muted-foreground">
               Estate Planning · Elder Law · Asset Protection
             </div>

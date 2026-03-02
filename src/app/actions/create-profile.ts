@@ -7,8 +7,13 @@ export async function createProfile(data: {
   email: string
   first_name: string
   last_name: string
-  organization: string
-  phone: string
+  title?: string
+  organization?: string
+  phone?: string
+  mailing_street?: string
+  mailing_city?: string
+  mailing_state?: string
+  mailing_zip?: string
   role: string
   referrer_type?: string
 }) {

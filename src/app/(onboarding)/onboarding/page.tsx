@@ -4,7 +4,7 @@ import { OnboardingForm } from '@/components/auth/OnboardingForm'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Complete Your Profile — Zacharia Frey Referral Portal',
+  title: 'Complete Your Profile — Zacharia Brown Referral Portal',
 }
 
 export default async function OnboardingPage() {
