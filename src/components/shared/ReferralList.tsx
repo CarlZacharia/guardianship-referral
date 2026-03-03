@@ -3,13 +3,18 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { createClient } from '@/lib/supabase/client'
+import { useToast } from '@/hooks/use-toast'
 import { Button } from '@/components/ui/button'
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter
+} from '@/components/ui/dialog'
 import { format } from 'date-fns'
 import {
   ReferralStatus, ReferralType, UrgencyLevel,
   STATUS_LABELS, REFERRAL_TYPE_LABELS, URGENCY_LABELS
 } from '@/lib/types/referral.types'
-import { FileEdit, Eye, AlertTriangle, Zap, FileDown, FileText, Loader2 } from 'lucide-react'
+import { FileEdit, Eye, AlertTriangle, Zap, FileDown, FileText, Loader2, Trash2 } from 'lucide-react'
 
 // ============================================================
 // StatusBadge
@@ -55,6 +60,7 @@ interface ReferralListProps {
   emptyMessage?: string
   showEditDraft?: boolean
   isStaffView?: boolean
+  newReferralAction?: React.ReactNode
 }
 
 export function ReferralList({
@@ -62,26 +68,64 @@ export function ReferralList({
   emptyMessage = 'No referrals found.',
   showEditDraft,
   isStaffView,
+  newReferralAction,
 }: ReferralListProps) {
   const router = useRouter()
+  const { toast } = useToast()
   const [navigating, setNavigating] = useState(false)
+  const [deleteId, setDeleteId] = useState<string | null>(null)
+  const [deleting, setDeleting] = useState(false)
+
+  const handleDelete = async () => {
+    if (!deleteId) return
+    setDeleting(true)
+    const supabase = createClient()
+    try {
+      // Remove uploaded files from storage
+      const { data: docs } = await supabase
+        .from('referral_documents')
+        .select('storage_path')
+        .eq('referral_id', deleteId)
+      if (docs && docs.length > 0) {
+        await supabase.storage
+          .from('referral-documents')
+          .remove(docs.map(d => d.storage_path))
+      }
+
+      // Cascade delete related rows then the referral
+      await supabase.from('referral_documents').delete().eq('referral_id', deleteId)
+      await supabase.from('assets').delete().eq('referral_id', deleteId)
+      await supabase.from('family_members').delete().eq('referral_id', deleteId)
+      await supabase.from('referrals').delete().eq('id', deleteId)
+
+      toast({ title: 'Referral deleted' })
+      router.refresh()
+    } catch {
+      toast({ title: 'Error deleting referral', variant: 'destructive' })
+    } finally {
+      setDeleting(false)
+      setDeleteId(null)
+    }
+  }
 
   if (referrals.length === 0) {
     return (
       <div className="text-center py-12 bg-white rounded-lg border">
         <p className="text-muted-foreground">{emptyMessage}</p>
         {!isStaffView && (
-          <Button
-            className="mt-4 cursor-pointer"
-            disabled={navigating}
-            onClick={() => {
-              setNavigating(true)
-              router.push('/referral/new')
-            }}
-          >
-            {navigating && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-            Submit Your First Referral
-          </Button>
+          newReferralAction ? <div className="mt-4">{newReferralAction}</div> : (
+            <Button
+              className="mt-4 cursor-pointer"
+              disabled={navigating}
+              onClick={() => {
+                setNavigating(true)
+                router.push('/referral/new')
+              }}
+            >
+              {navigating && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              Submit Your First Referral
+            </Button>
+          )
         )}
       </div>
     )
@@ -90,89 +134,120 @@ export function ReferralList({
   const basePath = isStaffView ? '/staff/referral' : '/referral'
 
   return (
-    <div className="bg-white rounded-lg border overflow-hidden">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="border-b bg-muted/40 text-left text-xs font-medium text-muted-foreground">
-            <th className="px-4 py-3">Resident</th>
-            <th className="px-4 py-3">Case Type</th>
-            <th className="px-4 py-3">Status</th>
-            <th className="px-4 py-3">Date Submitted</th>
-            <th className="px-4 py-3 text-right">Actions</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y">
-          {referrals.map((referral) => {
-            const clientName = referral.client_first_name
-              ? `${referral.client_first_name} ${referral.client_last_name}`
-              : 'Client name pending'
+    <>
+      <div className="bg-white rounded-lg border overflow-hidden">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b bg-muted/40 text-left text-xs font-medium text-muted-foreground">
+              <th className="px-4 py-3">Resident</th>
+              <th className="px-4 py-3">Case Type</th>
+              <th className="px-4 py-3">Status</th>
+              <th className="px-4 py-3">Date Submitted</th>
+              <th className="px-4 py-3 text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y">
+            {referrals.map((referral) => {
+              const clientName = referral.client_first_name
+                ? `${referral.client_first_name} ${referral.client_last_name}`
+                : 'Client name pending'
 
-            const isDraft = referral.status === 'draft'
+              const isDraft = referral.status === 'draft'
 
-            const dateDisplay = referral.submitted_at
-              ? format(new Date(referral.submitted_at), 'MMM d, yyyy')
-              : isDraft && referral.current_step
-                ? `Draft · Step ${referral.current_step}/7`
-                : '—'
+              const dateDisplay = referral.submitted_at
+                ? format(new Date(referral.submitted_at), 'MMM d, yyyy')
+                : isDraft && referral.current_step
+                  ? `Draft · Step ${referral.current_step}/7`
+                  : '—'
 
-            return (
-              <tr key={referral.id} className="hover:bg-slate-50 transition-colors">
-                <td className="px-4 py-3 font-medium">{clientName}</td>
-                <td className="px-4 py-3 text-muted-foreground">
-                  {REFERRAL_TYPE_LABELS[referral.referral_type as ReferralType] || 'Pending'}
-                </td>
-                <td className="px-4 py-3">
-                  <div className="flex items-center gap-1.5">
-                    <StatusBadge status={referral.status} />
-                    <UrgencyBadge urgency={referral.urgency} />
-                  </div>
-                </td>
-                <td className="px-4 py-3 text-muted-foreground">{dateDisplay}</td>
-                <td className="px-4 py-3">
-                  <div className="flex items-center justify-end gap-2">
-                    {!isDraft && (
-                      <>
-                        <Button asChild variant="outline" size="sm">
-                          <a
-                            href={`/api/referral/${referral.id}/medicaid-forms`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                          >
-                            <FileText className="w-3.5 h-3.5 mr-1.5" /> MCD Forms
-                          </a>
+              return (
+                <tr key={referral.id} className="hover:bg-slate-50 transition-colors">
+                  <td className="px-4 py-3 font-medium">{clientName}</td>
+                  <td className="px-4 py-3 text-muted-foreground">
+                    {REFERRAL_TYPE_LABELS[referral.referral_type as ReferralType] || 'Pending'}
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-1.5">
+                      <StatusBadge status={referral.status} />
+                      <UrgencyBadge urgency={referral.urgency} />
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 text-muted-foreground">{dateDisplay}</td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center justify-end gap-2">
+                      {!isDraft && (
+                        <>
+                          <Button asChild variant="outline" size="sm">
+                            <a
+                              href={`/api/referral/${referral.id}/medicaid-forms`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              <FileText className="w-3.5 h-3.5 mr-1.5" /> MCD Forms
+                            </a>
+                          </Button>
+                          <Button asChild variant="outline" size="sm">
+                            <a
+                              href={`/api/referral/${referral.id}/report`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              <FileDown className="w-3.5 h-3.5 mr-1.5" /> Report
+                            </a>
+                          </Button>
+                        </>
+                      )}
+                      <Button
+                        asChild
+                        variant={isDraft && showEditDraft ? 'default' : 'outline'}
+                        size="sm"
+                      >
+                        <Link href={`${basePath}/${referral.id}`}>
+                          {isDraft && showEditDraft ? (
+                            <><FileEdit className="w-3.5 h-3.5 mr-1.5" /> Resume</>
+                          ) : (
+                            <><Eye className="w-3.5 h-3.5 mr-1.5" /> View</>
+                          )}
+                        </Link>
+                      </Button>
+                      {isDraft && showEditDraft && !isStaffView && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setDeleteId(referral.id)}
+                          className="text-muted-foreground hover:text-destructive h-8 w-8 p-0"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
                         </Button>
-                        <Button asChild variant="outline" size="sm">
-                          <a
-                            href={`/api/referral/${referral.id}/report`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                          >
-                            <FileDown className="w-3.5 h-3.5 mr-1.5" /> Report
-                          </a>
-                        </Button>
-                      </>
-                    )}
-                    <Button
-                      asChild
-                      variant={isDraft && showEditDraft ? 'default' : 'outline'}
-                      size="sm"
-                    >
-                      <Link href={`${basePath}/${referral.id}`}>
-                        {isDraft && showEditDraft ? (
-                          <><FileEdit className="w-3.5 h-3.5 mr-1.5" /> Resume</>
-                        ) : (
-                          <><Eye className="w-3.5 h-3.5 mr-1.5" /> View</>
-                        )}
-                      </Link>
-                    </Button>
-                  </div>
-                </td>
-              </tr>
-            )
-          })}
-        </tbody>
-      </table>
-    </div>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      <Dialog open={!!deleteId} onOpenChange={(open) => { if (!open) setDeleteId(null) }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Referral</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this referral? This will permanently
+              remove the referral and all associated data. This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteId(null)} disabled={deleting}>
+              No, Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleDelete} disabled={deleting}>
+              {deleting ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Deleting...</> : 'Yes, Delete'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   )
 }
-

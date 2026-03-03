@@ -134,7 +134,7 @@ export function Step1Referral({ defaultValues, onComplete, navProps, autoSave, r
           <CardTitle>Referral</CardTitle>
         </div>
         <CardDescription>
-          Referral source, case type, and client information.
+          Referral source, case type, and resident information.
         </CardDescription>
       </CardHeader>
 
@@ -200,7 +200,7 @@ export function Step1Referral({ defaultValues, onComplete, navProps, autoSave, r
               name="referral_type"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Case Type</FormLabel>
+                  <FormLabel>Case Type <span className="text-destructive">*</span></FormLabel>
                   <FormControl>
                     <RadioGroup
                       onValueChange={field.onChange}
@@ -246,7 +246,7 @@ export function Step1Referral({ defaultValues, onComplete, navProps, autoSave, r
             />
 
             {/* ── Client Identity ── */}
-            <SectionHeader icon={UserCircle} title="Client Information" />
+            <SectionHeader icon={UserCircle} title="Resident Information" />
 
             <div className="grid grid-cols-2 gap-4">
               <FormField control={form.control} name="client_first_name"
@@ -301,7 +301,7 @@ export function Step1Referral({ defaultValues, onComplete, navProps, autoSave, r
               <FormField control={form.control} name="client_sex"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Sex</FormLabel>
+                    <FormLabel>Sex <span className="text-destructive">*</span></FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
                         <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
@@ -323,7 +323,7 @@ export function Step1Referral({ defaultValues, onComplete, navProps, autoSave, r
               <FormField control={form.control} name="client_ssn_last4"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>SSN (Last 4)</FormLabel>
+                    <FormLabel>SSN (Last 4) <span className="text-destructive">*</span></FormLabel>
                     <FormControl><Input placeholder="XXXX" maxLength={4} {...field} /></FormControl>
                     <FormDescription className="text-xs">Last 4 digits only</FormDescription>
                     <FormMessage />
@@ -342,7 +342,7 @@ export function Step1Referral({ defaultValues, onComplete, navProps, autoSave, r
               <FormField control={form.control} name="client_county"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>FL County</FormLabel>
+                    <FormLabel>FL County <span className="text-destructive">*</span></FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
                         <SelectTrigger><SelectValue placeholder="Select county..." /></SelectTrigger>
@@ -398,7 +398,7 @@ export function Step1Referral({ defaultValues, onComplete, navProps, autoSave, r
                     'flex items-center justify-between p-3 rounded-lg border transition-colors',
                     isMarried ? 'border-primary/30 bg-primary/5' : 'border-input'
                   )}>
-                    <FormLabel className="cursor-pointer mb-0 font-medium">Currently Married</FormLabel>
+                    <FormLabel className="cursor-pointer mb-0 font-medium">Currently Married <span className="text-destructive">*</span></FormLabel>
                     <FormControl>
                       <Switch checked={!!field.value} onCheckedChange={field.onChange} />
                     </FormControl>
@@ -555,7 +555,7 @@ export function Step1Referral({ defaultValues, onComplete, navProps, autoSave, r
               <FormField control={form.control} name="admission_date"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Admission Date</FormLabel>
+                    <FormLabel>Admission Date <span className="text-destructive">*</span></FormLabel>
                     <FormControl><Input type="date" {...field} /></FormControl>
                     <FormMessage />
                   </FormItem>

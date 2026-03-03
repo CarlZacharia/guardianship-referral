@@ -93,3 +93,12 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Dark blue text for all form input data — outside @layer for higher specificity */
+[data-slot="input"],
+[data-slot="textarea"],
+[data-slot="select-trigger"],
+[role="radiogroup"] label,
+select {
+  color: #1a3a5c !important;
+}

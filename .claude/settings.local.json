@@ -7,7 +7,8 @@
       "Bash(npm install:*)",
       "Bash(node -e:*)",
       "Bash(npx tsc:*)",
-      "Bash(xargs grep -l \"View\\\\|view.*referral\")"
+      "Bash(xargs grep -l \"View\\\\|view.*referral\")",
+      "Bash(npx next build)"
     ]
   }
 }

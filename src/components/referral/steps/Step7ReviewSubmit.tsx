@@ -4,7 +4,7 @@
 
 import { useState } from 'react'
 import {
-  Referral, REFERRAL_TYPE_LABELS, CAPACITY_LABELS,
+  Referral, ReferralType, REFERRAL_TYPE_LABELS, CAPACITY_LABELS,
   URGENCY_LABELS, ASSET_TYPE_LABELS, INCOME_LIMIT, PNA
 } from '@/lib/types/referral.types'
 import { getReferralWarnings, getReferralNextSteps } from '@/lib/referral-alerts'
@@ -22,6 +22,7 @@ import { Edit, Loader2, ClipboardCheck, AlertCircle, AlertTriangle, ListChecks }
 interface Step7Props {
   referralData: Partial<Referral>
   referralId?: string
+  referralType?: ReferralType
   activeSteps: { number: number; label: string }[]
   onSubmit: (data: Partial<Referral>) => Promise<void>
   onEditStep: (step: number) => void
@@ -72,6 +73,7 @@ function ReviewRow({ label, value }: { label: string; value?: string | number | 
 export function Step7ReviewSubmit({
   referralData,
   referralId,
+  referralType,
   activeSteps,
   onSubmit,
   onEditStep,
@@ -326,28 +328,30 @@ export function Step7ReviewSubmit({
         ) : null}
       </ReviewSection>
 
-      {/* Step 5: Medicaid */}
-      <ReviewSection title="Medicaid" stepNumber={5} onEdit={onEditStep}>
-        <ReviewRow
-          label="Application Type"
-          value={referralData.medicaid_application_type === 'new' ? 'New Application'
-            : referralData.medicaid_application_type === 'renewal' ? 'Renewal'
-            : undefined}
-        />
-        <ReviewRow label="Date of Need" value={referralData.medicaid_date_of_need} />
-        <ReviewRow label="Application Date" value={referralData.medicaid_application_date} />
-        <ReviewRow label="Application Number" value={referralData.medicaid_application_number} />
-        <ReviewRow label="Case Number" value={referralData.medicaid_case_number} />
-        <ReviewRow label="Current Status" value={referralData.medicaid_current_status} />
-        <ReviewRow label="Filed By" value={referralData.medicaid_filed_by} />
-        <ReviewRow label="Contact Name" value={referralData.medicaid_contact_name} />
-        <ReviewRow label="Contact Address" value={referralData.medicaid_contact_address} />
-        <ReviewRow label="Contact Phone" value={referralData.medicaid_contact_phone} />
-        <ReviewRow label="Contact Email" value={referralData.medicaid_contact_email} />
-        <ReviewRow label="MyACCESS Login" value={referralData.medicaid_myaccess_login} />
-        <ReviewRow label="Documents Uploaded" value={referralData.medicaid_documents_uploaded} />
-        <ReviewRow label="Comments" value={referralData.medicaid_comments} />
-      </ReviewSection>
+      {/* Step 5: Medicaid (hidden for guardianship-only) */}
+      {referralType !== 'guardianship' && (
+        <ReviewSection title="Medicaid" stepNumber={5} onEdit={onEditStep}>
+          <ReviewRow
+            label="Application Type"
+            value={referralData.medicaid_application_type === 'new' ? 'New Application'
+              : referralData.medicaid_application_type === 'renewal' ? 'Renewal'
+              : undefined}
+          />
+          <ReviewRow label="Date of Need" value={referralData.medicaid_date_of_need} />
+          <ReviewRow label="Application Date" value={referralData.medicaid_application_date} />
+          <ReviewRow label="Application Number" value={referralData.medicaid_application_number} />
+          <ReviewRow label="Case Number" value={referralData.medicaid_case_number} />
+          <ReviewRow label="Current Status" value={referralData.medicaid_current_status} />
+          <ReviewRow label="Filed By" value={referralData.medicaid_filed_by} />
+          <ReviewRow label="Contact Name" value={referralData.medicaid_contact_name} />
+          <ReviewRow label="Contact Address" value={referralData.medicaid_contact_address} />
+          <ReviewRow label="Contact Phone" value={referralData.medicaid_contact_phone} />
+          <ReviewRow label="Contact Email" value={referralData.medicaid_contact_email} />
+          <ReviewRow label="MyACCESS Login" value={referralData.medicaid_myaccess_login} />
+          <ReviewRow label="Documents Uploaded" value={referralData.medicaid_documents_uploaded} />
+          <ReviewRow label="Comments" value={referralData.medicaid_comments} />
+        </ReviewSection>
+      )}
 
       {/* Step 6: Documents & Uploads */}
       <ReviewSection title="Documents & Uploads" stepNumber={6} onEdit={onEditStep}>

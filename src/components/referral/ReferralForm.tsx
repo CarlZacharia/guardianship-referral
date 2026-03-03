@@ -53,7 +53,7 @@ export const STEPS = [
     number: 5,
     label: 'Medicaid',
     description: 'Medicaid application details',
-    requiredFor: ['guardianship', 'medicaid', 'both'] as ReferralType[],
+    requiredFor: ['medicaid', 'both'] as ReferralType[],
   },
   {
     number: 6,
@@ -448,6 +448,7 @@ export function ReferralForm({ referralId, initialData, userId, referrerOrganiza
           <Step7ReviewSubmit
             referralData={referralData}
             referralId={savedReferralId}
+            referralType={referralType}
             activeSteps={activeSteps}
             onSubmit={handleFinalSubmit}
             onEditStep={setCurrentStep}

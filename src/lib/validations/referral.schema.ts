@@ -57,9 +57,9 @@ export const step1Schema = z.object({
   client_full_legal_name: z.string().optional(),
   client_dob: z.string().min(1, 'Date of birth is required'),
   client_sex: z.enum(['male', 'female', 'other', 'unknown']),
-  client_ssn_last4: z.string().regex(/^\d{4}$/, 'Enter last 4 digits only').optional().or(z.literal('')),
+  client_ssn_last4: z.string().regex(/^\d{4}$/, 'Enter last 4 digits of SSN'),
   client_language: z.string().optional(),
-  client_county: z.string().optional(),
+  client_county: z.string().min(1, 'County is required'),
   client_phone: z.string().optional(),
   client_email: z.string().email('Invalid email').optional().or(z.literal('')),
 
@@ -74,12 +74,12 @@ export const step1Schema = z.object({
   client_current_zip: z.string().optional(),
 
   // Facility account
-  admission_date: z.string().optional(),
+  admission_date: z.string().min(1, 'Admission date is required'),
   amount_owed_facility: z.number().min(0).optional().nullable(),
   facility_monthly_cost: z.number().min(0).optional().nullable(),
 
   // Marital status (moved from old Step 6)
-  is_married: z.boolean().optional(),
+  is_married: z.boolean({ required_error: 'Marital status is required' }),
   spouse_name: z.string().optional(),
   spouse_dob: z.string().optional(),
   spouse_ssn_last4: z.string().regex(/^\d{4}$/).optional().or(z.literal('')),

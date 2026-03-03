@@ -1,8 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { ReferralList } from '@/components/shared/ReferralList'
-import { Button } from '@/components/ui/button'
-import { Plus } from 'lucide-react'
-import Link from 'next/link'
+import { NewReferralDialog } from '@/components/shared/NewReferralDialog'
 import { Metadata } from 'next'
 
 export const metadata: Metadata = {
@@ -44,12 +42,7 @@ export default async function ReferrerDashboard() {
             Manage your referrals below
           </p>
         </div>
-        <Button asChild>
-          <Link href="/referral/new">
-            <Plus className="w-4 h-4 mr-2" />
-            New Referral
-          </Link>
-        </Button>
+        <NewReferralDialog userId={user!.id} />
       </div>
 
       {/* Referral List */}
@@ -57,6 +50,7 @@ export default async function ReferrerDashboard() {
         referrals={referrals || []}
         emptyMessage="You haven't submitted any referrals yet."
         showEditDraft
+        newReferralAction={<NewReferralDialog userId={user!.id} />}
       />
     </div>
   )
