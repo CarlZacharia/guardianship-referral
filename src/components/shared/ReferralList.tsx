@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { useToast } from '@/hooks/use-toast'
@@ -73,6 +72,7 @@ export function ReferralList({
   const router = useRouter()
   const { toast } = useToast()
   const [navigating, setNavigating] = useState(false)
+  const [navigatingId, setNavigatingId] = useState<string | null>(null)
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [deleting, setDeleting] = useState(false)
 
@@ -80,32 +80,40 @@ export function ReferralList({
     if (!deleteId) return
     setDeleting(true)
     const supabase = createClient()
-    try {
-      // Remove uploaded files from storage
-      const { data: docs } = await supabase
-        .from('referral_documents')
-        .select('storage_path')
-        .eq('referral_id', deleteId)
-      if (docs && docs.length > 0) {
-        await supabase.storage
-          .from('referral-documents')
-          .remove(docs.map(d => d.storage_path))
+
+    // Remove uploaded files from storage
+    const { data: docs } = await supabase
+      .from('referral_documents')
+      .select('storage_path')
+      .eq('referral_id', deleteId)
+    if (docs && docs.length > 0) {
+      await supabase.storage
+        .from('referral-documents')
+        .remove(docs.map(d => d.storage_path))
+    }
+
+    // Cascade delete related rows then the referral
+    const tables = ['referral_documents', 'assets', 'family_members'] as const
+    for (const table of tables) {
+      const { error } = await supabase.from(table).delete().eq('referral_id', deleteId)
+      if (error) {
+        toast({ title: `Error removing ${table}`, description: error.message, variant: 'destructive' })
+        setDeleting(false)
+        setDeleteId(null)
+        return
       }
+    }
 
-      // Cascade delete related rows then the referral
-      await supabase.from('referral_documents').delete().eq('referral_id', deleteId)
-      await supabase.from('assets').delete().eq('referral_id', deleteId)
-      await supabase.from('family_members').delete().eq('referral_id', deleteId)
-      await supabase.from('referrals').delete().eq('id', deleteId)
-
+    const { error } = await supabase.from('referrals').delete().eq('id', deleteId)
+    if (error) {
+      toast({ title: 'Error deleting referral', description: error.message, variant: 'destructive' })
+    } else {
       toast({ title: 'Referral deleted' })
       router.refresh()
-    } catch {
-      toast({ title: 'Error deleting referral', variant: 'destructive' })
-    } finally {
-      setDeleting(false)
-      setDeleteId(null)
     }
+
+    setDeleting(false)
+    setDeleteId(null)
   }
 
   if (referrals.length === 0) {
@@ -198,17 +206,21 @@ export function ReferralList({
                         </>
                       )}
                       <Button
-                        asChild
                         variant={isDraft && showEditDraft ? 'default' : 'outline'}
                         size="sm"
+                        disabled={navigatingId === referral.id}
+                        onClick={() => {
+                          setNavigatingId(referral.id)
+                          router.push(`${basePath}/${referral.id}`)
+                        }}
                       >
-                        <Link href={`${basePath}/${referral.id}`}>
-                          {isDraft && showEditDraft ? (
-                            <><FileEdit className="w-3.5 h-3.5 mr-1.5" /> Resume</>
-                          ) : (
-                            <><Eye className="w-3.5 h-3.5 mr-1.5" /> View</>
-                          )}
-                        </Link>
+                        {navigatingId === referral.id ? (
+                          <><Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> Loading...</>
+                        ) : isDraft && showEditDraft ? (
+                          <><FileEdit className="w-3.5 h-3.5 mr-1.5" /> Resume</>
+                        ) : (
+                          <><Eye className="w-3.5 h-3.5 mr-1.5" /> View</>
+                        )}
                       </Button>
                       {isDraft && showEditDraft && !isStaffView && (
                         <Button
@@ -248,6 +260,15 @@ export function ReferralList({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {navigatingId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="flex flex-col items-center gap-3 rounded-lg bg-white p-8 shadow-lg">
+            <Loader2 className="h-10 w-10 animate-spin text-primary" />
+            <p className="text-sm font-medium text-muted-foreground">Loading referral...</p>
+          </div>
+        </div>
+      )}
     </>
   )
 }

@@ -23,6 +23,7 @@ import { Separator } from '@/components/ui/separator';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Building2, UserCircle, MapPin, DollarSign, Heart } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -82,6 +83,8 @@ export function Step1Referral({ defaultValues, onComplete, navProps, autoSave, r
       client_home_city: defaultValues.client_home_city || '',
       client_home_state: defaultValues.client_home_state || 'FL',
       client_home_zip: defaultValues.client_home_zip || '',
+      owns_home: defaultValues.owns_home || false,
+      home_other_residents: defaultValues.home_other_residents || '',
       client_current_address: defaultValues.client_current_address || '',
       client_current_city: defaultValues.client_current_city || '',
       client_current_state: defaultValues.client_current_state || 'FL',
@@ -506,6 +509,39 @@ export function Step1Referral({ defaultValues, onComplete, navProps, autoSave, r
                 )}
               />
             </div>
+
+            <FormField control={form.control} name="owns_home"
+              render={({ field }) => (
+                <FormItem className="flex items-center gap-2 space-y-0">
+                  <FormControl>
+                    <Checkbox
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                  <FormLabel className="cursor-pointer font-normal mb-0">
+                    Does this person own this home?
+                  </FormLabel>
+                </FormItem>
+              )}
+            />
+
+            {form.watch('owns_home') && (
+              <FormField control={form.control} name="home_other_residents"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Who else lives there?</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="List names and relationships of other residents"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
 
             <SectionHeader icon={Building2} title="Current Address (if different)" />
 

@@ -10,13 +10,14 @@ export const metadata: Metadata = {
 export default async function StaffDashboard({
   searchParams,
 }: {
-  searchParams: {
+  searchParams: Promise<{
     status?: string
     type?: string
     urgency?: string
     search?: string
-  }
+  }>
 }) {
+  const params = await searchParams
   const supabase = await createClient()
 
   let query = supabase
@@ -31,18 +32,18 @@ export default async function StaffDashboard({
     `)
     .order('updated_at', { ascending: false })
 
-  if (searchParams.status) query = query.eq('status', searchParams.status)
-  if (searchParams.type) query = query.eq('referral_type', searchParams.type)
-  if (searchParams.urgency) query = query.eq('urgency', searchParams.urgency)
+  if (params.status) query = query.eq('status', params.status)
+  if (params.type) query = query.eq('referral_type', params.type)
+  if (params.urgency) query = query.eq('urgency', params.urgency)
 
   const { data: referrals } = await query
 
   // Filter by search client-side (name search)
-  const filtered = searchParams.search
+  const filtered = params.search
     ? (referrals || []).filter(r =>
         `${r.client_first_name} ${r.client_last_name}`
           .toLowerCase()
-          .includes(searchParams.search!.toLowerCase())
+          .includes(params.search!.toLowerCase())
       )
     : (referrals || [])
 

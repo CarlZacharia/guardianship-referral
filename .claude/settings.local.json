@@ -8,7 +8,10 @@
       "Bash(node -e:*)",
       "Bash(npx tsc:*)",
       "Bash(xargs grep -l \"View\\\\|view.*referral\")",
-      "Bash(npx next build)"
+      "Bash(npx next build)",
+      "Bash(xargs grep -l \"delete\\\\|DELETE\")",
+      "Bash(xargs grep -l \"\\\\.delete\\(\\)\\\\|\\\\.delete\\(\\\\|from\\(''referrals''\\)\\\\|from.*referrals\\\\|family_members\\\\|referral_documents\")",
+      "Bash(grep -n \"DELETE\\\\|FOREIGN\\\\|CASCADE\\\\|RLS\\\\|POLICY\\\\|CONSTRAINT\" /c/Users/czach/apps/react/guardianship-referral/supabase/migrations/*.sql)"
     ]
   }
 }

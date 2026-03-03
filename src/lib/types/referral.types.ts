@@ -172,6 +172,8 @@ export interface Referral {
   client_home_city?: string;
   client_home_state?: string;
   client_home_zip?: string;
+  owns_home?: boolean;
+  home_other_residents?: string;
   client_current_address?: string;
   client_current_city?: string;
   client_current_state?: string;
@@ -321,6 +323,8 @@ export interface Step1Data {
   client_home_city?: string;
   client_home_state?: string;
   client_home_zip?: string;
+  owns_home?: boolean;
+  home_other_residents?: string;
   client_current_address?: string;
   client_current_city?: string;
   client_current_state?: string;

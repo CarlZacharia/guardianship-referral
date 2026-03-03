@@ -68,6 +68,8 @@ export const step1Schema = z.object({
   client_home_city: z.string().optional(),
   client_home_state: z.string().optional(),
   client_home_zip: z.string().optional(),
+  owns_home: z.boolean().optional(),
+  home_other_residents: z.string().optional(),
   client_current_address: z.string().optional(),
   client_current_city: z.string().optional(),
   client_current_state: z.string().optional(),
