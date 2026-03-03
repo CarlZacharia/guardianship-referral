@@ -11,7 +11,8 @@
       "Bash(npx next build)",
       "Bash(xargs grep -l \"delete\\\\|DELETE\")",
       "Bash(xargs grep -l \"\\\\.delete\\(\\)\\\\|\\\\.delete\\(\\\\|from\\(''referrals''\\)\\\\|from.*referrals\\\\|family_members\\\\|referral_documents\")",
-      "Bash(grep -n \"DELETE\\\\|FOREIGN\\\\|CASCADE\\\\|RLS\\\\|POLICY\\\\|CONSTRAINT\" /c/Users/czach/apps/react/guardianship-referral/supabase/migrations/*.sql)"
+      "Bash(grep -n \"DELETE\\\\|FOREIGN\\\\|CASCADE\\\\|RLS\\\\|POLICY\\\\|CONSTRAINT\" /c/Users/czach/apps/react/guardianship-referral/supabase/migrations/*.sql)",
+      "Bash(npx next --version)"
     ]
   }
 }
